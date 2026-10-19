@@ -5,4 +5,4 @@ no order construction, no signing, no bundle submission, no wallet reference,
 no balance sweep. `position_cap == 0` is asserted in code, not promised in prose.
 """
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"

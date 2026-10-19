@@ -15,11 +15,14 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from omega_synapse import dashboard, suite_bridge as sb, telemetry
+from omega_synapse import __version__
 from omega_synapse.ffs_engine import Observation, evaluate_token, negative_control_null
 from omega_synapse.kraken_ohlc_fetcher import fetch_all
+from omega_synapse.p1_ranker import observed_queue
 from omega_synapse.security_gate import SecurityVerdict
 from omega_synapse.solana_geyser import GeyserListener
 from omega_synapse.spa import hansen_spa
+from omega_synapse.telemetry_sink import probe_sink
 
 BENCH = "XBTUSD"
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -76,9 +79,16 @@ def main() -> int:
 
     tel = telemetry.assert_registry()
     tel_ok = telemetry.init_otel()
+    sink = tel_ok.get("probe") or probe_sink()
+    p1 = observed_queue(geyser_status=geo_status)
     tel_status = dict(tel)
     tel_status["otel"] = tel_ok["status"]
+    tel_status["sdk"] = tel_ok.get("sdk")
+    tel_status["sink"] = sink
+    tel_status["p1"] = p1
     tel_status["suite_version"] = sb.SUITE_VERSION
+    tel_status["version"] = __version__
+    tel_status["synthetic_data_used"] = 0
 
     out = {
         "suite_version": sb.SUITE_VERSION,
@@ -90,6 +100,9 @@ def main() -> int:
         "verdicts": verdicts,
         "telemetry": tel,
         "geyser": geo_status,
+        "sink": sink,
+        "p1": p1,
+        "version": __version__,
         "position_cap": 0,
         "live_gate": "NO",
         "execution_path": "ABSENT",
@@ -100,7 +113,8 @@ def main() -> int:
         json.dump(out, f, indent=2, default=str)
 
     dash = dashboard.render(provenance, verdicts, tel_status, spa,
-                            path=os.path.join(HERE, "dashboard.html"))
+                            path=os.path.join(HERE, "dashboard.html"),
+                            sink=sink, p1=p1)
 
     try:
         rec = sb.AUDIT_APPEND(
@@ -121,7 +135,10 @@ def main() -> int:
     print(f"[negctl] pure-noise spa_p={nc['spa_p']} correctly_rejected={nc['correctly_rejected']}")
     for v in verdicts:
         print(f"[gate] {v['symbol']:<8} {v['reason']:<22} position_cap={v['position_cap']}")
-    print(f"[telemetry] {tel['total']} metrics ok={tel['ok']} otel={tel_ok['status']}")
+    print(f"[telemetry] {tel['total']} metrics ok={tel['ok']} otel={tel_ok['status']} "
+          f"http={sink.get('http_status')} exported={sink.get('series_exported')}")
+    print(f"[p1] status={p1['status']} observed={p1['observed_candidates']} "
+          f"position_cap={p1['position_cap']} template={p1['template_adjudication']}")
     print(f"[audit] {'error: ' + rec['error'] if 'error' in rec else 'appended'}")
     print(f"[out] {res_path}")
     print(f"[out] {dash}")

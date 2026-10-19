@@ -32,7 +32,7 @@
   {
     "check": "5_decoder",
     "status": "PASS",
-    "detail": "create decoded=True, unknown discriminator rejected=True"
+    "detail": "create decoded=True, unknown discriminator rejected=True, base58_leading_zeros=True"
   },
   {
     "check": "6_synthetic_data_used",
@@ -47,7 +47,7 @@
   {
     "check": "8_security_gate",
     "status": "PASS",
-    "detail": "no-rpc=SECURITY_GATE_UNKNOWN, 20%conc=SECURITY_GATE_PASSED, 80%conc=security_gate_failed, caps=[0, 0, 0]"
+    "detail": "no-rpc=SECURITY_GATE_UNKNOWN, conc-only=SECURITY_GATE_UNKNOWN, observed=SECURITY_GATE_PASSED, 80%conc=security_gate_failed, rpc-supply=SECURITY_GATE_PASSED top10=0.2, caps=[0, 0, 0, 0, 0]"
   },
   {
     "check": "9_gate_order_and_cap",
@@ -63,5 +63,25 @@
     "check": "11_suite_binding",
     "status": "PASS",
     "detail": "omega_suite v1.1.1 imported (not reimplemented); PSR/DSR/PBO/MinTRL/haircut share one source of truth"
+  },
+  {
+    "check": "12_dashboard_writes_file",
+    "status": "PASS",
+    "detail": "4738 bytes written to disk by render()"
+  },
+  {
+    "check": "13_otlp_sink_not_claimed",
+    "status": "PASS",
+    "detail": "status=SINK_REJECTED http=405 accepted=False exported=0 export_claimed=False instrumentation_ts=NOT_LOADED"
+  },
+  {
+    "check": "14_p1_template",
+    "status": "CORRECTED",
+    "detail": "20-row sheet refused; unmeasured literals not emitted as rows; observed=0 cap=0"
+  },
+  {
+    "check": "15_instrumentation_ts",
+    "status": "UNAVAILABLE",
+    "detail": "instrumentation.ts is fail-closed and is not loaded by the Python WSGI runtime. Node packages were not added to this deploy: a package.json would make Vercel treat the project as Node and drop the Python function."
   }
 ]

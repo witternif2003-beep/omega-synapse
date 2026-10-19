@@ -8,6 +8,8 @@ in code, not promised in prose.
 
 **Live:** https://omega-synapse-repo.vercel.app · **Source:** https://github.com/witternif2003-beep/omega-synapse
 
+Version 1.0.1. The designated Solana Pulse URL is not an OTLP receiver. `/api/telemetry` reports the measured probe. It does not claim the sink is wired.
+
 ---
 
 ## What it does
@@ -81,21 +83,30 @@ python3 -m omega_synapse.server                   # http://localhost:8080
 | `/` | provenance dashboard (HTML) |
 | `/api/results` | full JSON: SPA, verdicts, provenance, telemetry |
 | `/api/validation` | last validation checklist |
-| `/api/health` | `{"live_gate":"NO","position_cap":0,"execution_path":"ABSENT"}` |
+| `/api/health` | `{"live_gate":"NO","position_cap":0,"execution_path":"ABSENT","version":"1.0.1"}` |
+| `/api/telemetry` | measured OTLP sink probe; not a claim that traces were accepted |
+| `/api/p1` | observed queue only; unmeasured template is not rendered |
 | `POST *` | `405` — read-only surface |
 
 ## Validation status
 
 ```
-PASS 10 · CORRECTED 1 · UNAVAILABLE 1 · BLOCKED 1 · FAIL 0
+PASS 12 · CORRECTED 2 · UNAVAILABLE 2 · BLOCKED 1 · FAIL 0
 ```
+
+Measured by `python3 -m omega_synapse.validate_omega_synapse` on 2026-10-19.
 
 * **CORRECTED** — the spec's "null simulation → DSR ≈ 0" is mis-specified. DSR is
   a probability in [0,1]; its noise expectation is <= 0.5 with the gate refusing.
+* **CORRECTED** — the 20-row P1 sheet (`$X`, `0.00`, `422`, `0.24`, `PENDING_GEYSER`)
+  is not data. `/api/p1` returns 0 observed rows.
 * **UNAVAILABLE** — "fetch 1,440 daily candles" is impossible on SOLUSD. Kraken
   caps OHLC at 721 bars and this pair's history starts 2024-10-29. Reported, not padded.
+* **UNAVAILABLE** — `instrumentation.ts` is not loaded by the Python WSGI runtime.
 * **BLOCKED** — Geyser p99 < 5 ms is unmeasurable without a Yellowstone
   endpoint + token. The decoder is unit-tested; the transport is not claimed.
+* **SINK** — `POST https://dist-kdwedath.devinapps.com/v1/traces` measured
+  `405 MethodNotAllowed`. Status is `SINK_REJECTED`, not wired.
 
 ## Boundary
 

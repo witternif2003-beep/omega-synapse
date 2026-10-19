@@ -7,8 +7,11 @@ Ordered gate, enforced by construction (the order is a list, not a comment):
 Terminal rules:
   * position_cap is 0 at every exit, PASS or FAIL. There is no branch that
     returns otherwise.
-  * PSR/DSR/PBO/MinTRL are DIAGNOSTIC. The gate passes only on SPA p < 0.05
-    AND a negative control that correctly fails.
+  * PSR/DSR/PBO are DIAGNOSTIC. MinTRL rejects a short sample. The per-token
+    gate passes only on SPA p < 0.05 (and a computed haircut that does not
+    erase the signal). The negative control is a suite-level check run beside
+    the gate — it is not an inserted step, and the order is not reordered to
+    pretend that it is.
   * No step may be skipped to reach a later step; a skipped step is recorded
     as SKIPPED and blocks the pass.
 
@@ -163,8 +166,8 @@ def evaluate_token(obs: Observation) -> dict:
     spa = _spa_step(obs)
     steps.append({"step": "spa", "status": spa["status"],
                   "p_value": spa.get("p_value"), "reps": spa.get("reps")})
-    if spa["status"] != "COMPUTED":
-        verdict["reason"] = spa["status"]
+    if spa.get("status") != "COMPUTED" or spa.get("p_value") is None:
+        verdict["reason"] = "SPA_UNMEASURED" if spa.get("status") == "COMPUTED" else spa.get("status")
         return verdict
     if spa["p_value"] >= 0.05:
         verdict["reason"] = "SPA_FAILED"
@@ -174,10 +177,10 @@ def evaluate_token(obs: Observation) -> dict:
     h = sb.HAIRCUT(obs.returns, max(obs.n_trials, 1))
     steps.append({"step": "haircut", "status": h["status"], "value": h["value"],
                   "n_tests": h.get("n_tests")})
-    if h["status"] != "COMPUTED":
-        verdict["reason"] = h["status"]
+    if h["status"] != "COMPUTED" or h.get("value") is None:
+        verdict["reason"] = h["status"] if h["status"] != "COMPUTED" else "HAIRCUT_UNMEASURED"
         return verdict
-    if h["value"] is not None and h["value"] >= 1.0:
+    if h["value"] >= 1.0:
         verdict["reason"] = "SIGNAL_ERASED_BY_HAIRCUT"
         return verdict
 

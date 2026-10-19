@@ -20,9 +20,11 @@ from omega_synapse.ffs_engine import (Observation, evaluate_token,
                                       negative_control_leaky, negative_control_null,
                                       purged_cscv)
 from omega_synapse.kraken_ohlc_fetcher import KrakenOHLCFetcher
-from omega_synapse.p1_ranker import TokenObservation, rank
-from omega_synapse.security_gate import SecurityVerdict, evaluate as sec_evaluate
-from omega_synapse.solana_geyser import GeyserListener, decode_instruction, discriminator
+from omega_synapse.p1_ranker import TokenObservation, observed_queue, rank
+from omega_synapse.security_gate import (SPL_TOKEN_PROGRAM, SecurityVerdict,
+                                        evaluate as sec_evaluate)
+from omega_synapse.solana_geyser import (GeyserListener, _b58, decode_instruction,
+                                        discriminator)
 from omega_synapse.spa import hansen_spa
 
 RESULTS = []
@@ -88,8 +90,10 @@ def c5_decoder():
     ev = decode_instruction(payload, slot=1, signature="sig")
     ok = ev is not None and ev.kind == "create"
     bad = decode_instruction(b"\x00" * 16)
-    record("5_decoder", "PASS" if (ok and bad is None) else "FAIL",
-           f"create decoded={ok}, unknown discriminator rejected={bad is None}")
+    b58_ok = _b58(b"\x00" * 32) == "1" * 32 and _b58(b"\x01") == "2"
+    record("5_decoder", "PASS" if (ok and bad is None and b58_ok) else "FAIL",
+           f"create decoded={ok}, unknown discriminator rejected={bad is None}, "
+           f"base58_leading_zeros={b58_ok}")
 
 
 def c6_no_synthetic():
@@ -122,17 +126,44 @@ def c7_telemetry():
 
 def c8_security_gate():
     v_missing = sec_evaluate("SomeMint111", rpc=None)
-    v_auth = sec_evaluate("SomeMint111",
-                          largest_accounts=[{"uiAmount": 20.0}] * 10, supply=1000.0)
+    v_conc_only = sec_evaluate("SomeMint111",
+                               largest_accounts=[{"uiAmount": 20.0}] * 10, supply=1000.0)
+    v_auth = sec_evaluate(
+        "SomeMint111",
+        largest_accounts=[{"uiAmount": 20.0}] * 10, supply=1000.0,
+        mint_authority_revoked=True, freeze_authority_revoked=True,
+        owner=SPL_TOKEN_PROGRAM)
     v_bad = sec_evaluate("SomeMint111",
                          largest_accounts=[{"uiAmount": 80.0}] * 10, supply=1000.0)
+
+    class _Rpc:
+        def call(self, method, params):
+            if method == "getAccountInfo":
+                return {"value": {
+                    "owner": SPL_TOKEN_PROGRAM,
+                    "data": {"parsed": {"info": {"mintAuthority": None,
+                                                "freezeAuthority": None}}},
+                }}
+            if method == "getTokenLargestAccounts":
+                return {"value": [{"uiAmount": 20.0}] * 10}
+            if method == "getTokenSupply":
+                return {"value": {"uiAmount": None, "uiAmountString": "1000",
+                                  "amount": "1000000000", "decimals": 6}}
+            raise RuntimeError(method)
+
+    v_rpc = sec_evaluate("MintRpc", rpc=_Rpc())
     ok = (v_missing.status == "SECURITY_GATE_UNKNOWN"
+          and v_conc_only.status == "SECURITY_GATE_UNKNOWN"
           and v_auth.status == "SECURITY_GATE_PASSED"
           and v_bad.status == "security_gate_failed"
-          and all(v.position_cap == 0 for v in (v_missing, v_auth, v_bad)))
+          and v_rpc.status == "SECURITY_GATE_PASSED"
+          and v_rpc.checks.get("top10_concentration") == 0.2
+          and all(v.position_cap == 0 for v in (v_missing, v_conc_only, v_auth, v_bad, v_rpc)))
     record("8_security_gate", "PASS" if ok else "FAIL",
-           f"no-rpc={v_missing.status}, 20%conc={v_auth.status}, "
-           f"80%conc={v_bad.status}, caps={[v.position_cap for v in (v_missing, v_auth, v_bad)]}")
+           f"no-rpc={v_missing.status}, conc-only={v_conc_only.status}, "
+           f"observed={v_auth.status}, 80%conc={v_bad.status}, "
+           f"rpc-supply={v_rpc.status} top10={v_rpc.checks.get('top10_concentration')}, "
+           f"caps={[v.position_cap for v in (v_missing, v_conc_only, v_auth, v_bad, v_rpc)]}")
 
 
 def c9_gate_order_and_cap():
@@ -184,6 +215,40 @@ def c12_dashboard_writes():
            f"{n} bytes written to disk by render()")
 
 
+def c13_sink_and_template():
+    from omega_synapse.telemetry_sink import probe_sink
+    sink = probe_sink(force=True)
+    claimed = sink.get("status") in ("WIRED", "PASS", "SDK_PRESENT") or sink.get("export_claimed") is True
+    http = sink.get("http_status")
+    honest = sink.get("measured") is True and not claimed and sink.get("series_exported") == 0
+    if sink.get("accepted") and http not in (200, 202):
+        honest = False
+    record("13_otlp_sink_not_claimed", "PASS" if honest else "FAIL",
+           f"status={sink.get('status')} http={http} accepted={sink.get('accepted')} "
+           f"exported={sink.get('series_exported')} export_claimed={sink.get('export_claimed')} "
+           f"instrumentation_ts={sink.get('instrumentation_ts')}")
+
+    p1 = observed_queue(geyser_status={"status": "BLOCKED_ON_CREDENTIALS", "missing": ["GEYSER_ENDPOINT"]})
+    blob = json.dumps(p1["rows"])
+    leaked = [lit for lit in ("$X", "0.24", "PENDING_GEYSER", "Token 01") if lit in blob]
+    ok = (p1["rows"] == [] and p1["observed_candidates"] == 0 and p1["position_cap"] == 0
+          and p1["template_adjudication"] == "CORRECTED" and not leaked)
+    record("14_p1_template", "CORRECTED" if ok else "FAIL",
+           "20-row sheet refused; unmeasured literals not emitted as rows; "
+           f"observed={p1['observed_candidates']} cap={p1['position_cap']}")
+
+    ts = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                      "instrumentation.ts")
+    text = open(ts, encoding="utf-8").read() if os.path.exists(ts) else ""
+    not_loaded = ("NOT_LOADED" in text and "throw new Error" in text
+                  and "OTLPHttpProtoTraceExporter" not in text)
+    record("15_instrumentation_ts", "UNAVAILABLE" if not_loaded else "FAIL",
+           "instrumentation.ts is fail-closed and is not loaded by the Python "
+           "WSGI runtime. Node packages were not added to this deploy: a "
+           "package.json would make Vercel treat the project as Node and drop "
+           "the Python function.")
+
+
 def c11_suite_binding():
     record("11_suite_binding", "PASS",
            f"omega_suite v{sb.SUITE_VERSION} imported (not reimplemented); "
@@ -194,7 +259,7 @@ def main():
     for fn in (c1_null_simulation, c2_leaky_control, c3_kraken_pagination,
                c4_geyser_latency, c5_decoder, c6_no_synthetic, c7_telemetry,
                c8_security_gate, c9_gate_order_and_cap, c10_ranker, c11_suite_binding,
-               c12_dashboard_writes):
+               c12_dashboard_writes, c13_sink_and_template):
         try:
             fn()
         except Exception as e:                       # noqa: BLE001
@@ -204,9 +269,13 @@ def main():
     for r in RESULTS:
         counts[r["status"]] = counts.get(r["status"], 0) + 1
     print("\nSUMMARY", json.dumps(counts))
-    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                           "validation.json"), "w", encoding="utf-8") as f:
-        json.dump(RESULTS, f, indent=2)
+    payload = json.dumps(RESULTS, indent=2)
+    here = os.path.dirname(os.path.abspath(__file__))
+    root = os.path.dirname(here)
+    for path in (os.path.join(here, "validation.json"),
+                 os.path.join(root, "validation.json")):
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(payload)
     return 0 if not counts.get("FAIL") and not counts.get("ERROR") else 1
 
 

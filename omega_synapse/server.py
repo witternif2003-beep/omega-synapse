@@ -52,15 +52,40 @@ class Handler(BaseHTTPRequestHandler):
         path = self.path.split("?")[0]
 
         if path == "/api/health":
+            from omega_synapse import __version__
             payload = {"status": "HEALTHY", "mode": "read-only",
                        "live_gate": "NO", "position_cap": 0,
-                       "execution_path": "ABSENT"}
+                       "execution_path": "ABSENT", "version": __version__}
             body = json.dumps(payload).encode()
+            return self._send(200, body, "application/json")
+
+        if path == "/api/telemetry":
+            from omega_synapse import __version__, telemetry
+            from omega_synapse.telemetry_sink import probe_sink
+            reg = telemetry.assert_registry()
+            sink = probe_sink()
+            body = json.dumps({
+                "version": __version__,
+                "registry_total": reg.get("total"),
+                "series_exported": sink.get("series_exported"),
+                "export_claimed": False,
+                "sink": sink,
+                "position_cap": 0,
+                "live_gate": "NO",
+                "execution_path": "ABSENT",
+            }).encode()
+            return self._send(200, body, "application/json")
+
+        if path == "/api/p1":
+            from omega_synapse.p1_ranker import observed_queue
+            from omega_synapse.solana_geyser import GeyserListener
+            body = json.dumps(observed_queue(
+                geyser_status=GeyserListener.from_env().start())).encode()
             return self._send(200, body, "application/json")
 
         target = ROUTES.get(path)
         if target is None:
-            return self._send(404, b'{"error":"not found","routes":["/","/api/results","/api/validation","/api/health"]}',
+            return self._send(404, b'{"error":"not found","routes":["/","/api/results","/api/validation","/api/health","/api/telemetry","/api/p1"]}',
                               "application/json")
 
         fn, ctype = target

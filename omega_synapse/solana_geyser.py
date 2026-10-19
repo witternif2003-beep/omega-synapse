@@ -94,12 +94,20 @@ _B58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
 
 def _b58(raw: bytes) -> str:
+    """Bitcoin/Solana base58. Leading zero bytes are leading '1's.
+    The previous rjust(32)[:44] form dropped leading zeros and truncated."""
+    zeros = 0
+    for b in raw:
+        if b == 0:
+            zeros += 1
+        else:
+            break
     n = int.from_bytes(raw, "big")
     out = ""
     while n:
         n, r = divmod(n, 58)
         out = _B58[r] + out
-    return out.rjust(32, "1")[:44]
+    return ("1" * zeros) + out
 
 
 @dataclass
@@ -110,12 +118,16 @@ class GeyserListener:
 
     @classmethod
     def from_env(cls) -> "GeyserListener":
-        return cls(endpoint=os.environ.get("GEYSER_ENDPOINT"),
-                   token=os.environ.get("GEYSER_TOKEN"))
+        # Accept the operator name from the runbook without logging the value.
+        token = os.environ.get("GEYSER_TOKEN") or os.environ.get("GEYSER_X_TOKEN")
+        return cls(endpoint=os.environ.get("GEYSER_ENDPOINT"), token=token)
 
     def status(self) -> dict:
-        missing = [n for n, v in (("GEYSER_ENDPOINT", self.endpoint),
-                                  ("GEYSER_TOKEN", self.token)) if not v]
+        missing = []
+        if not self.endpoint:
+            missing.append("GEYSER_ENDPOINT")
+        if not self.token:
+            missing.append("GEYSER_TOKEN or GEYSER_X_TOKEN")
         if missing:
             return {"status": "BLOCKED_ON_CREDENTIALS", "missing": missing,
                     "note": "public RPC is NOT a substitute: latency profile differs "

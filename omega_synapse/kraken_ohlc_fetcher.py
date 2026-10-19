@@ -57,16 +57,25 @@ class KrakenCache:
             c.execute("""CREATE TABLE IF NOT EXISTS ohlc(
                          pair TEXT PRIMARY KEY, payload TEXT, fetched_at REAL)""")
 
-    def get(self, pair: str) -> tuple[list, float] | None:
+    def get(self, pair: str) -> tuple[list, float, bool] | None:
         with sqlite3.connect(self.path) as c:
             row = c.execute("SELECT payload, fetched_at FROM ohlc WHERE pair=?",
                             (pair,)).fetchone()
-        return (json.loads(row[0]), row[1]) if row else None
+        if not row:
+            return None
+        payload = json.loads(row[0])
+        # Legacy rows stored a bare list and did not record feed exhaustion.
+        if isinstance(payload, list):
+            return payload, float(row[1]), False
+        if isinstance(payload, dict):
+            return payload.get("rows") or [], float(row[1]), bool(payload.get("exhausted"))
+        return None
 
-    def put(self, pair: str, rows: list, fetched_at: float) -> None:
+    def put(self, pair: str, rows: list, fetched_at: float, exhausted: bool = False) -> None:
+        blob = json.dumps({"rows": rows, "exhausted": bool(exhausted)})
         with sqlite3.connect(self.path) as c:
             c.execute("INSERT OR REPLACE INTO ohlc VALUES (?,?,?)",
-                      (pair, json.dumps(rows), fetched_at))
+                      (pair, blob, fetched_at))
 
 
 class KrakenOHLCFetcher:
@@ -98,8 +107,23 @@ class KrakenOHLCFetcher:
         raise RuntimeError("kraken: empty result")
 
     def backfill(self, pair: str, interval: int = 1440, want: int = 1440) -> Series:
-        """Paginate forward using `last` as the next `since` (Kraken's documented
-        idiom) until `want` candles are collected or the feed stops advancing."""
+        """Paginate forward until `want` candles are collected or the feed stops.
+
+        Kraken's `last` field is the cursor for *new* bars. Using it as the next
+        `since` stalls or skips. Advance `since` to max(returned timestamp) +
+        one interval instead. Never pad a short feed up to `want`.
+
+        A fresh SQLite row (age <= TTL) is served as CACHE. The cache is not
+        only a failure fallback — that was the previous bug.
+        """
+        cached = self.cache.get(pair)
+        if cached:
+            rows, ts, exhausted = cached
+            age = time.time() - ts
+            if rows and age <= self.ttl and (len(rows) >= want or exhausted):
+                served = rows[-want:] if len(rows) > want else list(rows)
+                return Series(pair=pair, rows=served, source="CACHE", fetched_at=ts)
+
         collected: dict[int, list] = {}
         step = interval * 60
         since = int(time.time()) - want * step
@@ -116,6 +140,7 @@ class KrakenOHLCFetcher:
                         new += 1
                 if new == 0:            # feed exhausted / not advancing
                     break
+                # Do not jump to result["last"] — that cursor is for new bars.
                 nxt = max(int(r[0]) for r in res["rows"]) + step
                 if nxt <= since:
                     break
@@ -123,12 +148,14 @@ class KrakenOHLCFetcher:
             rows = [collected[k] for k in sorted(collected)][-want:]
             if not rows:
                 raise RuntimeError("kraken: zero candles")
-            self.cache.put(pair, rows, time.time())
-            return Series(pair=pair, rows=rows, source="LIVE", fetched_at=time.time())
+            exhausted = len(collected) < want
+            now = time.time()
+            self.cache.put(pair, rows, now, exhausted=exhausted)
+            return Series(pair=pair, rows=rows, source="LIVE", fetched_at=now)
         except (urllib.error.URLError, RuntimeError, TimeoutError, OSError) as e:
             cached = self.cache.get(pair)
             if cached:
-                rows, ts = cached
+                rows, ts, _exhausted = cached
                 age = time.time() - ts
                 return Series(pair=pair, rows=rows,
                               source="CACHE" if age <= self.ttl else "STALE",

@@ -139,19 +139,25 @@ def assert_registry() -> dict:
 
 
 def init_otel(service_name: str = "omega-synapse", endpoint: str | None = None) -> dict:
-    """Best-effort OpenTelemetry wiring. Returns an honest status: if the SDK
-    is absent we report NOOP rather than pretending spans are flowing."""
+    """Probe the designated sink. SDK presence is not export, and a rejected
+    sink is not reported as wired."""
+    sdk = "ABSENT"
     try:
-        from opentelemetry import trace  # noqa: F401
-        from opentelemetry.sdk.trace import TracerProvider  # noqa: F401
-        from opentelemetry.sdk.trace.export import BatchSpanProcessor  # noqa: F401
+        import importlib.util
+        if importlib.util.find_spec("opentelemetry") is not None:
+            sdk = "PRESENT"
+    except Exception:                                       # noqa: BLE001
+        sdk = "ABSENT"
+    try:
+        from omega_synapse.telemetry_sink import probe_sink
+        probed = probe_sink(endpoint)
     except Exception as e:                                  # noqa: BLE001
-        return {"status": "NOOP_SDK_ABSENT", "detail": f"{type(e).__name__}: {e}",
-                "service": service_name,
-                "note": "metrics registry is defined; no spans are exported in this run"}
-    return {"status": "SDK_PRESENT", "service": service_name,
-            "endpoint": endpoint or "unset (no collector configured)",
-            "note": "processor wiring is environment-specific; not asserted here"}
+        probed = {"status": "SINK_UNREACHABLE", "measured": False,
+                  "error": f"{type(e).__name__}: {e}", "series_exported": 0,
+                  "export_claimed": False}
+    return {"status": probed.get("status", "SINK_UNREACHABLE"),
+            "sdk": sdk, "service": service_name, "probe": probed,
+            "note": "SDK presence is not export. A rejected sink is not wired."}
 
 
 if __name__ == "__main__":

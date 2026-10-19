@@ -35,13 +35,17 @@ def _build_payload() -> dict:
     """Run the real screener pipeline. Every value is computed."""
     import numpy as np
 
+    from omega_synapse import __version__
     from omega_synapse import suite_bridge as sb
     from omega_synapse.dashboard import render_html
     from omega_synapse.ffs_engine import Observation, evaluate_token, negative_control_null
     from omega_synapse.kraken_ohlc_fetcher import fetch_all
+    from omega_synapse.p1_ranker import observed_queue
     from omega_synapse.security_gate import SecurityVerdict
+    from omega_synapse.solana_geyser import GeyserListener
     from omega_synapse.spa import hansen_spa
     from omega_synapse import telemetry
+    from omega_synapse.telemetry_sink import probe_sink
 
     series = fetch_all(cache_path=os.path.join(CACHE_DIR, "kraken_cache.sqlite"))
     provenance = [s.provenance() for s in series.values()]
@@ -76,11 +80,20 @@ def _build_payload() -> dict:
 
     nc = negative_control_null()
     tel = telemetry.assert_registry()
+    otel = telemetry.init_otel()
+    geo = GeyserListener.from_env().start()
+    sink = otel.get("probe") or probe_sink()
+    p1 = observed_queue(geyser_status=geo)
     tel_status = dict(tel)
-    tel_status["otel"] = telemetry.init_otel()["status"]
+    tel_status["otel"] = otel["status"]
+    tel_status["sdk"] = otel.get("sdk")
+    tel_status["sink"] = sink
+    tel_status["p1"] = p1
     tel_status["suite_version"] = sb.SUITE_VERSION
+    tel_status["version"] = __version__
+    tel_status["synthetic_data_used"] = 0
 
-    html = render_html(provenance, verdicts, tel_status, spa)
+    html = render_html(provenance, verdicts, tel_status, spa, sink=sink, p1=p1)
 
     return {
         "html": html,
@@ -93,6 +106,10 @@ def _build_payload() -> dict:
             "provenance": provenance,
             "verdicts": verdicts,
             "telemetry": tel,
+            "geyser": geo,
+            "sink": sink,
+            "p1": p1,
+            "version": __version__,
             "position_cap": 0,
             "live_gate": "NO",
             "execution_path": "ABSENT",
@@ -129,11 +146,34 @@ def app(environ, start_response):
 
     try:
         if path == "/api/health":
+            from omega_synapse import __version__
             status, headers, body = _json("200 OK", {
                 "status": "HEALTHY", "mode": "read-only", "live_gate": "NO",
                 "position_cap": 0, "execution_path": "ABSENT",
+                "version": __version__,
                 "runtime": "vercel-serverless" if SERVERLESS else "local",
             })
+        elif path == "/api/telemetry":
+            from omega_synapse import __version__, telemetry
+            from omega_synapse.telemetry_sink import probe_sink
+            reg = telemetry.assert_registry()
+            sink = probe_sink()
+            status, headers, body = _json("200 OK", {
+                "version": __version__,
+                "registry_total": reg.get("total"),
+                "registry_ok": reg.get("ok"),
+                "series_exported": sink.get("series_exported"),
+                "export_claimed": sink.get("export_claimed"),
+                "sink": sink,
+                "position_cap": 0,
+                "live_gate": "NO",
+                "execution_path": "ABSENT",
+            })
+        elif path == "/api/p1":
+            from omega_synapse.p1_ranker import observed_queue
+            from omega_synapse.solana_geyser import GeyserListener
+            status, headers, body = _json("200 OK", observed_queue(
+                geyser_status=GeyserListener.from_env().start()))
         elif path in ("/", "/index.html", "/dashboard"):
             payload = _payload()
             if "error" in payload:
@@ -148,8 +188,11 @@ def app(environ, start_response):
             status, headers, body = _json("200 OK",
                                           payload.get("results", payload))
         elif path == "/api/validation":
-            vp = os.path.join(ROOT, "validation.json")
-            if os.path.exists(vp):
+            cands = [os.path.join(ROOT, "validation.json"),
+                     os.path.join(ROOT, "omega_synapse", "validation.json")]
+            existing = [p for p in cands if os.path.exists(p)]
+            if existing:
+                vp = max(existing, key=os.path.getmtime)
                 with open(vp, "rb") as f:
                     body = f.read()
                 status, headers = "200 OK", [("Content-Type", "application/json")]
@@ -158,7 +201,8 @@ def app(environ, start_response):
         else:
             status, headers, body = _json("404 Not Found", {
                 "error": "not found",
-                "routes": ["/", "/api/results", "/api/validation", "/api/health"]})
+                "routes": ["/", "/api/results", "/api/validation", "/api/health",
+                           "/api/telemetry", "/api/p1"]})
     except Exception as e:                                   # noqa: BLE001
         status, headers, body = _json("500 Internal Server Error", {
             "error": f"{type(e).__name__}: {e}",

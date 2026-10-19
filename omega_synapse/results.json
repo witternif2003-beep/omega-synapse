@@ -7,16 +7,16 @@
     "status": "COMPUTED",
     "t": 720,
     "k": 3,
-    "stat": 0.11279353457086659,
+    "stat": 0.11281314831098763,
     "reps": 1000,
     "block_q": 9.0,
     "n_good_models": 3,
     "recenter": "consistent",
     "best_model": 0,
     "t_stat": [
-      0.112794,
-      -0.422982,
-      -0.380692
+      0.112813,
+      -0.429351,
+      -0.383417
     ],
     "seed": 20261019
   },
@@ -74,7 +74,7 @@
         {
           "step": "mintrl",
           "status": "COMPUTED",
-          "value": 12883.149481073628,
+          "value": 12931.264607122375,
           "reject_too_short": true
         }
       ],
@@ -97,7 +97,7 @@
         {
           "step": "mintrl",
           "status": "COMPUTED",
-          "value": 1300306.3997163451,
+          "value": 1659492.6853727782,
           "reject_too_short": true
         }
       ],
@@ -157,10 +157,59 @@
     "status": "BLOCKED_ON_CREDENTIALS",
     "missing": [
       "GEYSER_ENDPOINT",
-      "GEYSER_TOKEN"
+      "GEYSER_TOKEN or GEYSER_X_TOKEN"
     ],
     "note": "public RPC is NOT a substitute: latency profile differs by orders of magnitude and miss rate on new mints is high"
   },
+  "sink": {
+    "measured": true,
+    "cache": "LIVE",
+    "designated_base": "https://dist-kdwedath.devinapps.com",
+    "url": "https://dist-kdwedath.devinapps.com/v1/traces",
+    "method": "POST",
+    "http_status": 405,
+    "content_type": "application/xml",
+    "body_prefix": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Error><Code>MethodNotAllowed</Code><Message>The specified method is not allowed against this resource.</Message><Method>",
+    "error": null,
+    "status": "SINK_REJECTED",
+    "accepted": false,
+    "html_body": false,
+    "method_not_allowed": true,
+    "series_exported": 0,
+    "export_claimed": false,
+    "zero_fill": false,
+    "sdk": "ABSENT",
+    "instrumentation_ts": "NOT_LOADED",
+    "runtime": "python-wsgi",
+    "position_cap": 0,
+    "fallback": {
+      "type": "INPROCESS_LEDGER",
+      "durable": false,
+      "deployed_collector": false,
+      "reason": "Designated URL is not an OTLP receiver. A public POST collector is not added to this GET-only surface. Serverless cannot host a long-lived collector. No ephemeral sandbox URL is advertised."
+    },
+    "probed_at": "2026-10-19T17:34:01Z",
+    "ledger_len": 1
+  },
+  "p1": {
+    "status": "BLOCKED_ON_CREDENTIALS",
+    "observed_candidates": 0,
+    "rows": [],
+    "position_cap": 0,
+    "template_adjudication": "CORRECTED",
+    "refused_literals": [
+      "$X",
+      "$Y",
+      "0.00",
+      "422",
+      "+inf",
+      "0.24",
+      "security_gate_failed / PASS",
+      "PENDING_GEYSER"
+    ],
+    "reason": "The 20-row sheet is not data. DSR 0.00, PBO 422, Haircut_R 0.24, $X/$Y and PENDING_GEYSER were not measured. No placeholder mints emitted."
+  },
+  "version": "1.0.1",
   "position_cap": 0,
   "live_gate": "NO",
   "execution_path": "ABSENT",

@@ -54,8 +54,10 @@ curl -s -X POST -o /dev/null -w "%{http_code}\n" $BASE/    # 405
 
 ## Notes / known constraints
 
-* **Cold start** recomputes from Kraken (~3-4 s). Warm invocations serve a
-  5-minute memo. `maxDuration` is 60 s in `vercel.json`.
+* **Cold start** recomputes from Kraken. Warm invocations serve a 5-minute memo.
+  `vercel.json` is rewrites-only. `maxDuration` is not set there: pairing a
+  `functions` block with `builds` previously failed the deploy, and this file
+  does not claim a duration the config does not set.
 * **SQLite cache** points at `/tmp` under serverless (read-only FS elsewhere).
   That cache is per-instance and disposable — it is an optimisation, never a
   source of truth.

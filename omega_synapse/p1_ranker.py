@@ -85,3 +85,49 @@ def rank(obs: TokenObservation) -> RankResult:
     if failures:
         return RankResult(obs.mint, "not_p1_tier1", failures, [])
     return RankResult(obs.mint, "p1_tier1", [], [])
+
+
+# The runbook's 20-row sheet. These are not observations.
+REFUSED_TEMPLATE_LITERALS = (
+    "$X", "$Y", "0.00", "422", "+inf", "0.24",
+    "security_gate_failed / PASS", "PENDING_GEYSER",
+)
+_PLACEHOLDER_MINTS = {"insufficient_data", "[token 01]", "token 01"}
+
+
+def observed_queue(observations: list | None = None, geyser_status: dict | None = None) -> dict:
+    """Return only ranked observations. Never emit the 20-row placeholder sheet."""
+    rows = []
+    for obs in observations or []:
+        mint = (getattr(obs, "mint", None) or "").strip()
+        if not mint or mint.lower() in _PLACEHOLDER_MINTS or mint.lower().startswith("[token"):
+            continue
+        ranked = rank(obs)
+        rows.append({
+            "mint": mint,
+            "symbol": obs.symbol,
+            "tier": ranked.tier,
+            "missing": ranked.missing,
+            "failures": ranked.failures,
+            "position_cap": 0,
+        })
+    geo = geyser_status or {"status": "BLOCKED_ON_CREDENTIALS",
+                            "missing": ["GEYSER_ENDPOINT", "GEYSER_TOKEN or GEYSER_X_TOKEN"]}
+    if rows:
+        status = "OBSERVED"
+    else:
+        status = geo.get("status") or "BLOCKED_ON_CREDENTIALS"
+        if status == "CREDENTIALS_PRESENT":
+            status = "NO_OBSERVATIONS"
+    return {
+        "status": status,
+        "observed_candidates": len(rows),
+        "rows": rows,
+        "position_cap": 0,
+        "template_adjudication": "CORRECTED",
+        "refused_literals": list(REFUSED_TEMPLATE_LITERALS),
+        "reason": (
+            "The 20-row sheet is not data. DSR 0.00, PBO 422, Haircut_R 0.24, "
+            "$X/$Y and PENDING_GEYSER were not measured. No placeholder mints emitted."
+        ),
+    }

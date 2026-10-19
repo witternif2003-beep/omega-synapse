@@ -85,60 +85,128 @@ class SolanaRpc:
             raise RpcError(f"{type(e).__name__}: {e}") from e
         if "error" in body:
             raise RpcError(str(body["error"]))
-        return body.get("result") or {}
+        result = body.get("result")
+        return result if isinstance(result, dict) else {}
+
+
+def _ui_amount(value: dict) -> float | None:
+    """Prefer uiAmount, then uiAmountString. `amount`+decimals is the fallback
+    when the node omits the float (large supplies)."""
+    if not isinstance(value, dict):
+        return None
+    ui = value.get("uiAmount")
+    if ui is None and value.get("uiAmountString") not in (None, ""):
+        ui = value.get("uiAmountString")
+    if ui is None and value.get("amount") is not None:
+        decimals = int(value.get("decimals") or 0)
+        ui = int(value["amount"]) / (10 ** decimals)
+    if ui is None:
+        return None
+    return float(ui)
+
+
+def _apply_authority(v: SecurityVerdict, *, mint_authority_revoked, freeze_authority_revoked,
+                     owner, extensions) -> None:
+    if mint_authority_revoked is None:
+        v.unknown.append("mint_authority_not_observed")
+    else:
+        v.checks["mint_authority_revoked"] = bool(mint_authority_revoked)
+        if not mint_authority_revoked:
+            v.failed.append("mint_authority_not_revoked")
+    if freeze_authority_revoked is None:
+        v.unknown.append("freeze_authority_not_observed")
+    else:
+        v.checks["freeze_authority_revoked"] = bool(freeze_authority_revoked)
+        if not freeze_authority_revoked:
+            v.failed.append("freeze_authority_not_revoked")
+    if owner is None:
+        v.unknown.append("program_not_observed")
+        return
+    v.checks["program"] = owner
+    if owner == TOKEN_2022_PROGRAM:
+        if extensions is None:
+            v.unknown.append("token2022_extensions_not_observed")
+            return
+        names = set(extensions)
+        v.checks["token2022_extensions"] = sorted(names)
+        for ext, why in DANGEROUS_EXTENSIONS.items():
+            if ext in names:
+                v.failed.append(f"token2022_{ext}: {why}")
+    elif owner == SPL_TOKEN_PROGRAM:
+        v.checks["token2022_extensions"] = []
+    else:
+        v.unknown.append("owner_unresolved")
 
 
 def evaluate(mint: str, rpc: SolanaRpc | None = None,
              largest_accounts: list | None = None,
-             supply: float | None = None) -> SecurityVerdict:
-    """Run the four checks. `largest_accounts`/`supply` may be injected for
-    deterministic tests; otherwise they are read from `rpc`."""
+             supply: float | None = None,
+             *,
+             mint_authority_revoked: bool | None = None,
+             freeze_authority_revoked: bool | None = None,
+             owner: str | None = None,
+             extensions: list | None = None) -> SecurityVerdict:
+    """Run the four checks. Injected facts are for deterministic tests.
+    A concentration figure alone is not a pass: missing authority evidence
+    stays UNKNOWN."""
     v = SecurityVerdict(mint=mint)
-    if rpc is None and (largest_accounts is None or supply is None):
-        v.unknown.append("no RPC endpoint supplied")
-        return v
 
-    # --- 1/2/3: account + extension inspection -------------------------------
     if rpc is not None:
         try:
             info = rpc.call("getAccountInfo", [mint, {"encoding": "jsonParsed",
                                                       "commitment": "confirmed"}])
-            data = (info.get("value") or {}).get("data") or {}
-            parsed = (data.get("parsed") or {}).get("info") or {}
-            owner = (info.get("value") or {}).get("owner")
-            mint_auth = parsed.get("mintAuthority")
-            freeze_auth = parsed.get("freezeAuthority")
-            v.checks["program"] = owner
-            v.checks["mint_authority_revoked"] = mint_auth is None
-            v.checks["freeze_authority_revoked"] = freeze_auth is None
-            if mint_auth is not None:
-                v.failed.append("mint_authority_not_revoked")
-            if freeze_auth is not None:
-                v.failed.append("freeze_authority_not_revoked")
-
-            if owner == TOKEN_2022_PROGRAM:
-                exts = (parsed.get("extensions") or [])
-                names = {e.get("extension") for e in exts if isinstance(e, dict)}
-                v.checks["token2022_extensions"] = sorted(x for x in names if x)
-                for ext, why in DANGEROUS_EXTENSIONS.items():
-                    if ext in names:
-                        v.failed.append(f"token2022_{ext}: {why}")
-            elif owner == SPL_TOKEN_PROGRAM:
-                v.checks["token2022_extensions"] = []
-            elif owner is None:
-                v.unknown.append("owner_unresolved")
+            value = info.get("value") or {}
+            if not value:
+                v.unknown.append("account_missing")
+            else:
+                data = value.get("data") or {}
+                parsed = (data.get("parsed") or {}).get("info") or {}
+                owner = value.get("owner")
+                if not parsed:
+                    v.unknown.append("mint_account_unparsed")
+                else:
+                    # Missing key means revoked only when the mint account parsed.
+                    mint_authority_revoked = parsed.get("mintAuthority") is None
+                    freeze_authority_revoked = parsed.get("freezeAuthority") is None
+                if owner == TOKEN_2022_PROGRAM:
+                    exts = parsed.get("extensions") or []
+                    extensions = [e.get("extension") for e in exts
+                                  if isinstance(e, dict) and e.get("extension")]
+                elif owner == SPL_TOKEN_PROGRAM:
+                    extensions = []
         except RpcError as e:
             v.unknown.append(f"getAccountInfo: {e}")
 
-        # --- 4: concentration ------------------------------------------------
         try:
             la = rpc.call("getTokenLargestAccounts", [mint, {"commitment": "confirmed"}])
             largest_accounts = la.get("value") or []
         except RpcError as e:
             v.unknown.append(f"getTokenLargestAccounts: {e}")
 
+        if supply is None:
+            try:
+                sup = rpc.call("getTokenSupply", [mint, {"commitment": "confirmed"}])
+                supply = _ui_amount(sup.get("value") or {})
+                if supply is None:
+                    v.unknown.append("supply_unparsed")
+            except RpcError as e:
+                v.unknown.append(f"getTokenSupply: {e}")
+    else:
+        if largest_accounts is None or supply is None:
+            v.unknown.append("no RPC endpoint supplied")
+
+    _apply_authority(v, mint_authority_revoked=mint_authority_revoked,
+                     freeze_authority_revoked=freeze_authority_revoked,
+                     owner=owner, extensions=extensions)
+
     if largest_accounts is not None and supply is not None:
-        top10 = sum(float(a.get("uiAmount") or 0) for a in largest_accounts[:10])
+        top10 = 0.0
+        for a in largest_accounts[:10]:
+            amt = _ui_amount(a) if isinstance(a, dict) else None
+            if amt is None and isinstance(a, dict):
+                v.unknown.append("holder_amount_unparsed")
+                return v
+            top10 += amt or 0.0
         conc = top10 / supply if supply > 0 else None
         v.checks["top10_concentration"] = round(conc, 4) if conc is not None else None
         if conc is None:
