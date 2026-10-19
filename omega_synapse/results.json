@@ -1,0 +1,168 @@
+{
+  "suite_version": "1.1.1",
+  "bars_aligned": 720,
+  "benchmark": "XBTUSD",
+  "spa": {
+    "p_value": 0.717,
+    "status": "COMPUTED",
+    "t": 720,
+    "k": 3,
+    "stat": 0.11279353457086659,
+    "reps": 1000,
+    "block_q": 9.0,
+    "n_good_models": 3,
+    "recenter": "consistent",
+    "best_model": 0,
+    "t_stat": [
+      0.112794,
+      -0.422982,
+      -0.380692
+    ],
+    "seed": 20261019
+  },
+  "negative_control": {
+    "control": "pure_noise",
+    "spa_p": 0.7733333333333333,
+    "spa_status": "COMPUTED",
+    "psr": 0.48946552554214023,
+    "pbo": null,
+    "correctly_rejected": true
+  },
+  "provenance": [
+    {
+      "symbol": "SOLUSD",
+      "bars": 721,
+      "last_bar": "2026-10-19",
+      "source": "LIVE",
+      "error": null
+    },
+    {
+      "symbol": "XBTUSD",
+      "bars": 721,
+      "last_bar": "2026-10-19",
+      "source": "LIVE",
+      "error": null
+    },
+    {
+      "symbol": "ETHUSD",
+      "bars": 721,
+      "last_bar": "2026-10-19",
+      "source": "LIVE",
+      "error": null
+    },
+    {
+      "symbol": "XDGUSD",
+      "bars": 721,
+      "last_bar": "2026-10-19",
+      "source": "LIVE",
+      "error": null
+    }
+  ],
+  "verdicts": [
+    {
+      "symbol": "ETHUSD",
+      "suite_version": "1.1.1",
+      "ffs_version": "1.2.0",
+      "steps": [
+        {
+          "step": "security",
+          "status": "SECURITY_GATE_NOT_APPLICABLE",
+          "failed": [],
+          "unknown": [],
+          "not_applicable_reason": "CEX price series: no mint authority or holder set exists to inspect"
+        },
+        {
+          "step": "mintrl",
+          "status": "COMPUTED",
+          "value": 12883.149481073628,
+          "reject_too_short": true
+        }
+      ],
+      "position_cap": 0,
+      "passed": false,
+      "reason": "MINTRL_TOO_SHORT"
+    },
+    {
+      "symbol": "SOLUSD",
+      "suite_version": "1.1.1",
+      "ffs_version": "1.2.0",
+      "steps": [
+        {
+          "step": "security",
+          "status": "SECURITY_GATE_NOT_APPLICABLE",
+          "failed": [],
+          "unknown": [],
+          "not_applicable_reason": "CEX price series: no mint authority or holder set exists to inspect"
+        },
+        {
+          "step": "mintrl",
+          "status": "COMPUTED",
+          "value": 1300306.3997163451,
+          "reject_too_short": true
+        }
+      ],
+      "position_cap": 0,
+      "passed": false,
+      "reason": "MINTRL_TOO_SHORT"
+    },
+    {
+      "symbol": "XDGUSD",
+      "suite_version": "1.1.1",
+      "ffs_version": "1.2.0",
+      "steps": [
+        {
+          "step": "security",
+          "status": "SECURITY_GATE_NOT_APPLICABLE",
+          "failed": [],
+          "unknown": [],
+          "not_applicable_reason": "CEX price series: no mint authority or holder set exists to inspect"
+        },
+        {
+          "step": "mintrl",
+          "status": "MINTRL_NON_POSITIVE_SR",
+          "value": Infinity,
+          "reject_too_short": null
+        }
+      ],
+      "position_cap": 0,
+      "passed": false,
+      "reason": "MINTRL_NON_POSITIVE_SR"
+    }
+  ],
+  "telemetry": {
+    "ok": true,
+    "total": 7000,
+    "by_domain": {
+      "data_integrity": 1500,
+      "statistical": 1500,
+      "market": 2000,
+      "safety": 1000,
+      "performance": 1000
+    },
+    "problems": [],
+    "cardinality": {
+      "families": 7000,
+      "worst_case_series": 42000,
+      "label_enums": {
+        "provider": 5,
+        "pair": 5,
+        "window": 5,
+        "severity": 4,
+        "status": 6
+      },
+      "note": "default is ZERO labels (7000 series); worst case assumes one 6-value enum applied to every family. IDs (mint/sig/wallet) are trace attributes only."
+    }
+  },
+  "geyser": {
+    "status": "BLOCKED_ON_CREDENTIALS",
+    "missing": [
+      "GEYSER_ENDPOINT",
+      "GEYSER_TOKEN"
+    ],
+    "note": "public RPC is NOT a substitute: latency profile differs by orders of magnitude and miss rate on new mints is high"
+  },
+  "position_cap": 0,
+  "live_gate": "NO",
+  "execution_path": "ABSENT",
+  "synthetic_data_used": 0
+}

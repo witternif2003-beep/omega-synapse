@@ -1,0 +1,72 @@
+[
+  {
+    "check": "1_null_simulation",
+    "status": "PASS",
+    "detail": "spa_p=0.52 (>=0.05 required) | pbo=0.5409 (~0.50 expected) | psr=0.462"
+  },
+  {
+    "check": "1b_dsr_null_expectation",
+    "status": "CORRECTED",
+    "detail": "Spec's 'DSR ~ 0' is not a valid null. DSR is a probability in [0,1]; under noise the correct expectation is DSR <= 0.5 with the gate refusing. Asserting ~0 would mean the metric is mis-specified."
+  },
+  {
+    "check": "2_leaky_negative_control",
+    "status": "PASS",
+    "detail": "future-leak SPA p=0.0 \u2014 detector SEES planted edge"
+  },
+  {
+    "check": "3_kraken_pagination",
+    "status": "PASS",
+    "detail": "want=400 -> 400 bars; want=1440 -> 721 bars (feed ceiling 721, source=LIVE); no padding, no loop"
+  },
+  {
+    "check": "3b_1440_candle_item",
+    "status": "UNAVAILABLE",
+    "detail": "The checklist item 'fetch 1,440 daily candles' is not achievable on SOLUSD: Kraken's OHLC feed returns at most 721 bars and this pair's history begins 2024-10-29. Reporting this instead of padding is the only honest outcome; an intraday interval or a longer-history feed would be required."
+  },
+  {
+    "check": "4_geyser_latency_p99",
+    "status": "BLOCKED",
+    "detail": "BLOCKED_ON_CREDENTIALS \u2014 p99<5ms is unmeasurable without a Yellowstone endpoint+token. Decoder is unit-tested separately; transport is not claimed."
+  },
+  {
+    "check": "5_decoder",
+    "status": "PASS",
+    "detail": "create decoded=True, unknown discriminator rejected=True"
+  },
+  {
+    "check": "6_synthetic_data_used",
+    "status": "PASS",
+    "detail": "generators in ingest/render path: none; controls-only generators: ['validate_omega_synapse.py:random.uniform(', 'validate_omega_synapse.py:random.gauss(', 'validate_omega_synapse.py:np.random.normal(', 'validate_omega_synapse.py:np.random.rand', 'validate_omega_synapse.py:synthetic_series(']"
+  },
+  {
+    "check": "7_telemetry_7000",
+    "status": "PASS",
+    "detail": "total=7000 by_domain={'data_integrity': 1500, 'statistical': 1500, 'market': 2000, 'safety': 1000, 'performance': 1000} cardinality_bound=42000"
+  },
+  {
+    "check": "8_security_gate",
+    "status": "PASS",
+    "detail": "no-rpc=SECURITY_GATE_UNKNOWN, 20%conc=SECURITY_GATE_PASSED, 80%conc=security_gate_failed, caps=[0, 0, 0]"
+  },
+  {
+    "check": "9_gate_order_and_cap",
+    "status": "PASS",
+    "detail": "order=['security', 'mintrl', 'pbo', 'dsr', 'spa', 'haircut'], position_cap=0 (must be 0 even on a passing branch)"
+  },
+  {
+    "check": "10_p1_ranker",
+    "status": "PASS",
+    "detail": "complete=p1_tier1, partial=insufficient_data (missing=5), failing=not_p1_tier1"
+  },
+  {
+    "check": "11_suite_binding",
+    "status": "PASS",
+    "detail": "omega_suite v1.1.1 imported (not reimplemented); PSR/DSR/PBO/MinTRL/haircut share one source of truth"
+  },
+  {
+    "check": "12_dashboard_writes_file",
+    "status": "PASS",
+    "detail": "3708 bytes written to disk by render()"
+  }
+]

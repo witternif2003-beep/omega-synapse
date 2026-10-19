@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.vercel/
+.kraken_cache/
+*.sqlite
+*.sqlite-journal
+node_modules/
+.DS_Store
