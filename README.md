@@ -6,6 +6,8 @@ order construction, no signing, no bundle submission, no execution path.
 `position_cap` is `0` on every return path, including a passing verdict — asserted
 in code, not promised in prose.
 
+**Live:** https://omega-synapse-repo.vercel.app · **Source:** https://github.com/witternif2003-beep/omega-synapse
+
 ---
 
 ## What it does
