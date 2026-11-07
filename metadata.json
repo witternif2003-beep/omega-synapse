@@ -1,0 +1,6 @@
+{
+  "name": "Omega Protocol - Georgia Competitor Intelligence",
+  "description": "Real-time OSINT aggregation and competitor technology exploit intelligence dashboard for Georgia enterprise targets with live telemetry, verified workarounds, and network surveillance.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

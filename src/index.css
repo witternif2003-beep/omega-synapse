@@ -1,0 +1,160 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --accent: 0, 255, 136;
+  --mx: 50vw;
+  --my: 20vh;
+}
+
+body {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: radial-gradient(1200px 800px at 78% 62%, #0a1018 0%, #05070b 55%, #030509 100%);
+  color: #d4d4d8;
+  overflow-x: hidden;
+}
+
+/* Phosphor Terminal scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #05070b;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 136, 0.25);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 136, 0.6);
+}
+
+/* ---- 3D scene layers ---- */
+#scene {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 0;
+  pointer-events: none;
+}
+
+#vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(140% 100% at 50% 45%, transparent 55%, rgba(0,0,0,.55) 100%),
+              linear-gradient(180deg, rgba(0,20,10,.25), transparent 18%);
+}
+
+#page {
+  position: relative;
+  z-index: 10;
+}
+
+/* ---- 100% transparent glass: no fill, no frost — 100% optical transparency ---- */
+.glass {
+  position: relative;
+  border-radius: 12px;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid rgba(var(--accent), .38);
+  box-shadow: 0 0 28px -10px rgba(var(--accent), .22);
+}
+
+.glass:not(.modal-dialog) {
+  overflow: hidden;
+}
+
+/* Dedicated modal dialog styling for smooth, unrestricted touch scrolling */
+.modal-dialog {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  background: rgba(5, 8, 14, 0.94) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(var(--accent), 0.5) !important;
+  box-shadow: 0 0 35px -8px rgba(var(--accent), 0.3) !important;
+}
+
+/* active reflection: specular highlight tracks the pointer across every panel */
+.glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: radial-gradient(420px circle at var(--mx) var(--my), rgba(255,255,255,.14), transparent 62%);
+}
+
+/* idle sheen so the glass keeps moving when the pointer doesn't */
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  pointer-events: none;
+  z-index: 1;
+  background: linear-gradient(115deg, transparent 34%, rgba(255,255,255,.055) 47%, transparent 58%);
+  animation: sheen 9s linear infinite;
+}
+
+@keyframes sheen {
+  0% { transform: translateX(-38%); }
+  100% { transform: translateX(38%); }
+}
+
+.card {
+  background: transparent !important;
+  transition: border-color .2s, box-shadow .2s, transform .2s, background .2s;
+}
+
+.card:hover {
+  background: rgba(var(--accent), 0.05) !important;
+  border-color: rgba(var(--accent), .85);
+  box-shadow: 0 0 0 1px rgba(var(--accent), .5) inset, 0 0 26px -6px rgba(var(--accent), .4);
+  transform: translateY(-1px);
+}
+
+.chip {
+  transition: color .2s, border-color .2s, box-shadow .2s;
+}
+
+.chip:hover {
+  color: rgb(var(--accent));
+  border-color: rgba(var(--accent), .8);
+  box-shadow: 0 0 14px -4px rgba(var(--accent), .5);
+}
+
+.acc-text {
+  color: rgb(var(--accent));
+}
+
+.acc-glow {
+  text-shadow: 0 0 18px rgba(var(--accent), .55);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .3; }
+}
+
+.live-dot {
+  animation: pulse 1.6s infinite;
+  box-shadow: 0 0 10px rgba(var(--accent), .9);
+}
+
+select, input {
+  outline: none;
+  background: transparent;
+}
+
+select:focus, input:focus {
+  border-color: rgba(var(--accent), .8);
+  box-shadow: 0 0 14px -5px rgba(var(--accent), .6);
+}
