@@ -10,10 +10,18 @@ export interface EspionageCardProps {
     timestamp?: string;
     title?: string;
     description?: string;
+    identity?: string;
+    municipal_asset_id?: string;
+    anomaly_type?: string;
+    coordinates?: { lat: number; lng: number };
     telemetry?: {
       lsm?: string;
       jitter?: string;
       cipher?: string;
+      execution_time_ns?: string;
+      execution_time_ms?: string;
+      heap_used_mb?: string;
+      rss_mb?: string;
     };
     tags?: {
       it?: string;
@@ -28,6 +36,7 @@ export interface EspionageCardProps {
     };
     entities?: string[];
     workaroundStatus?: string;
+    redaction_status?: string;
   };
   onInspect?: () => void;
   onDeploy?: () => void;
@@ -35,6 +44,7 @@ export interface EspionageCardProps {
 
 export const EspionageCard: React.FC<EspionageCardProps> = ({ anomalyData, onInspect, onDeploy }) => {
   const [copied, setCopied] = useState(false);
+  const [viewMode, setViewMode] = useState<'fre902' | 'omega'>('omega');
 
   // Fallback data matching screenshot if no props are passed
   const data = anomalyData || {
@@ -74,88 +84,90 @@ export const EspionageCard: React.FC<EspionageCardProps> = ({ anomalyData, onIns
   };
 
   return (
-    <div className="w-full bg-[#0a0f0d] font-mono text-gray-300 p-4 border border-gray-800 rounded-lg shadow-2xl space-y-3">
+    <div className="w-full bg-[#070d10] font-mono text-slate-200 p-4 border border-zinc-700/80 rounded-lg shadow-2xl space-y-3.5">
       
-      {/* Top Filter Pills (Matching screenshot) */}
-      <div className="flex flex-wrap gap-2 mb-2 text-[10px] tracking-wider uppercase">
-        <span className="px-2 py-1 border border-gray-700 bg-gray-900 rounded text-zinc-400 font-bold">
+      {/* Top Filter Buttons (High Contrast & Coordinating Accents) */}
+      <div className="flex flex-wrap gap-2 mb-2 text-xs tracking-wider uppercase font-bold">
+        <span className="px-2.5 py-1 border border-zinc-600 bg-zinc-800 text-zinc-100 rounded">
           TELEMETRY DOMAIN:
         </span>
-        <span className="px-2 py-1 border border-gray-600 bg-gray-800 rounded text-zinc-200">
-          ALL INTEL (69)
+        <span className="px-2.5 py-1 border border-emerald-500/60 bg-emerald-950/80 text-emerald-200 rounded shadow-[0_0_8px_rgba(16,185,129,0.3)]">
+          ALL INTEL (170)
         </span>
-        <span className="px-2 py-1 border border-blue-900 bg-blue-900/20 text-blue-400 rounded flex items-center gap-1">
-          <Zap size={10} /> IT LAYER (56)
+        <span className="px-2.5 py-1 border border-cyan-500/60 bg-cyan-950/80 text-cyan-200 rounded flex items-center gap-1 shadow-[0_0_8px_rgba(6,182,212,0.3)]">
+          <Zap size={11} className="text-cyan-400" /> IT & ADMIN (88)
         </span>
-        <span className="px-2 py-1 border border-yellow-900 bg-yellow-900/20 text-yellow-500 rounded flex items-center gap-1">
+        <span className="px-2.5 py-1 border border-amber-500/60 bg-amber-950/80 text-amber-200 rounded flex items-center gap-1 shadow-[0_0_8px_rgba(245,158,11,0.3)]">
           🏛️ FINANCE LAYER (10)
         </span>
-        <span className="px-2 py-1 border border-green-900 bg-green-900/20 text-green-400 rounded flex items-center gap-1">
-          <Globe size={10} /> DUAL IT+FIN (1)
+        <span className="px-2.5 py-1 border border-teal-500/60 bg-teal-950/80 text-teal-200 rounded flex items-center gap-1 shadow-[0_0_8px_rgba(20,184,166,0.3)]">
+          <Globe size={11} className="text-teal-400" /> DUAL IT+FIN (1)
         </span>
-        <span className="px-2 py-1 border border-purple-900 bg-purple-900/20 text-purple-400 rounded flex items-center gap-1">
-          <ShieldAlert size={10} /> COUNTER-ESPIONAGE (4)
+        <span className="px-2.5 py-1 border border-purple-500/60 bg-purple-950/80 text-purple-200 rounded flex items-center gap-1 shadow-[0_0_8px_rgba(168,85,247,0.3)]">
+          <ShieldAlert size={11} className="text-purple-400" /> COUNTER-ESPIONAGE (71)
         </span>
       </div>
 
       {/* Main Card Container */}
-      <div className="border border-green-500/30 bg-[#0d1410] rounded-md overflow-hidden relative shadow-[0_0_20px_rgba(34,197,94,0.07)]">
+      <div className="border border-emerald-500/50 bg-[#09130d] rounded-lg overflow-hidden relative shadow-[0_0_25px_rgba(34,197,94,0.12)]">
         
         {/* Top Accent Line */}
-        <div className="h-1 w-full bg-gradient-to-r from-green-500 via-green-400 to-transparent"></div>
+        <div className="h-1.5 w-full bg-gradient-to-r from-emerald-400 via-cyan-400 to-emerald-500"></div>
 
-        <div className="p-4 space-y-3.5">
+        <div className="p-4 space-y-4">
           
           {/* Header Row */}
           <div className="flex flex-wrap justify-between items-center gap-2 text-xs">
             <div className="flex items-center gap-2">
-              <span className="text-red-500 font-bold tracking-widest">{data.status || 'CRITICAL'}</span>
-              <span className="text-gray-500">·</span>
-              <span className="text-gray-400">{data.jurisdiction || 'DOJ N.D. Ga.'}</span>
+              <span className="text-rose-400 font-extrabold tracking-widest text-sm drop-shadow-[0_0_8px_rgba(244,63,94,0.5)]">
+                {data.status || 'CRITICAL'}
+              </span>
+              <span className="text-zinc-500 font-bold">·</span>
+              <span className="text-zinc-200 font-semibold">{data.jurisdiction || 'DOJ N.D. Ga.'}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 border border-purple-500/50 bg-purple-900/30 text-purple-300 rounded text-[10px]">
+              <span className="px-2.5 py-0.5 border border-purple-500/70 bg-purple-950/80 text-purple-200 rounded text-[11px] font-bold shadow-[0_0_8px_rgba(168,85,247,0.3)]">
                 {data.tag || 'ESPIONAGE / FRE 902'}
               </span>
-              <span className="text-gray-500 text-[10px]">{data.timestamp || '2026-11-07 14:50:26'}</span>
+              <span className="text-zinc-300 text-xs font-semibold">{data.timestamp || '2026-11-07 14:50:26'}</span>
             </div>
           </div>
 
           {/* Title */}
-          <h2 className="text-sm font-bold text-white leading-snug">
+          <h2 className="text-base font-bold text-white leading-snug tracking-wide">
             {data.title}
           </h2>
 
           {/* Description */}
-          <p className="text-xs text-gray-400 leading-relaxed">
+          <p className="text-xs text-slate-200 leading-relaxed font-medium">
             {data.description}
           </p>
 
           {/* Telemetry Bar */}
           {data.telemetry && (
-            <div className="bg-[#111a15] border border-green-900/50 p-2 rounded flex flex-wrap items-center gap-3 text-[10px] text-green-400">
-              <Zap size={14} className="text-green-500 shrink-0" />
+            <div className="bg-[#0b1b12] border border-emerald-500/60 p-2.5 rounded-md flex flex-wrap items-center gap-3 text-xs text-emerald-300 font-semibold shadow-[inset_0_0_12px_rgba(0,0,0,0.6)]">
+              <Zap size={15} className="text-emerald-400 shrink-0" />
               <span>
-                LSM Guard: <strong>{data.telemetry.lsm || '4.8 µs'}</strong> · Jitter: <strong>{data.telemetry.jitter || '13.2 ps'}</strong> · {data.telemetry.cipher || '4096-bit RSA / 256-bit ECC'}
+                LSM Guard: <strong className="text-white">{data.telemetry.lsm || '4.8 µs'}</strong> · Jitter: <strong className="text-white">{data.telemetry.jitter || '13.2 ps'}</strong> · Cipher: <strong className="text-cyan-300">{data.telemetry.cipher || '4096-bit RSA / 256-bit ECC'}</strong>
               </span>
             </div>
           )}
 
           {/* Data Tags */}
           {data.tags && (
-            <div className="flex flex-col gap-1 text-[10px]">
+            <div className="flex flex-col gap-1.5 text-xs font-semibold">
               {data.tags.it && (
-                <span className="text-blue-400 border border-blue-900/50 bg-blue-900/10 px-2 py-1 rounded w-fit flex items-center gap-1">
-                  <Cpu size={10} /> IT: {data.tags.it}
+                <span className="text-cyan-200 border border-cyan-500/60 bg-cyan-950/70 px-2.5 py-1 rounded w-fit flex items-center gap-1.5 shadow-[0_0_8px_rgba(6,182,212,0.2)]">
+                  <Cpu size={12} className="text-cyan-400" /> IT: {data.tags.it}
                 </span>
               )}
               {data.tags.exp && (
-                <span className="text-yellow-500 border border-yellow-900/50 bg-yellow-900/10 px-2 py-1 rounded w-fit flex items-center gap-1">
+                <span className="text-amber-200 border border-amber-500/60 bg-amber-950/70 px-2.5 py-1 rounded w-fit flex items-center gap-1.5 shadow-[0_0_8px_rgba(245,158,11,0.2)]">
                   EXP: {data.tags.exp}
                 </span>
               )}
               {data.tags.docket && (
-                <span className="text-purple-400 border border-purple-900/50 bg-purple-900/10 px-2 py-1 rounded w-fit flex items-center gap-1">
+                <span className="text-purple-200 border border-purple-500/60 bg-purple-950/70 px-2.5 py-1 rounded w-fit flex items-center gap-1.5 shadow-[0_0_8px_rgba(168,85,247,0.2)]">
                   DOCKET: {data.tags.docket}
                 </span>
               )}
@@ -163,58 +175,91 @@ export const EspionageCard: React.FC<EspionageCardProps> = ({ anomalyData, onIns
           )}
 
           {/* Decrypted Plaintext Evidence Box */}
-          {data.evidence && (
-            <div className="border border-green-500 bg-[#0a130d] rounded p-3 relative shadow-[0_0_15px_rgba(34,197,94,0.1)]">
-              <div className="flex justify-between items-center mb-2 border-b border-green-900/50 pb-2">
-                <div className="flex items-center gap-2 text-[10px] text-green-500 font-bold">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span>// DECRYPTED PLAINTEXT EVIDENCE (FRE 902 PARITY)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-gray-500">AES-256-GCM</span>
+          <div className="border border-emerald-500/70 bg-[#02050b] rounded-lg p-3.5 relative shadow-[0_0_20px_rgba(34,197,94,0.18)] space-y-2">
+            <div className="flex flex-wrap justify-between items-center mb-2 border-b border-emerald-900/60 pb-2 gap-2">
+              <div className="flex items-center gap-2 text-xs text-emerald-400 font-extrabold">
+                <div className="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
+                <div className="flex items-center gap-1.5 bg-black/70 border border-emerald-800/80 rounded-md p-1">
                   <button
-                    onClick={handleCopy}
-                    className="p-1 hover:text-white transition-colors bg-white/5 hover:bg-white/15 rounded text-[10px] flex items-center gap-1 cursor-pointer"
+                    onClick={() => setViewMode('omega')}
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                      viewMode === 'omega' ? 'bg-emerald-500/30 text-emerald-200 border border-emerald-400/80 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'text-zinc-400 hover:text-white'
+                    }`}
                   >
-                    {copied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
-                    <span className="text-[9px]">{copied ? 'COPIED' : 'COPY'}</span>
+                    // OMEGA EXHIBIT (UNREDACTED)
+                  </button>
+                  <button
+                    onClick={() => setViewMode('fre902')}
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                      viewMode === 'fre902' ? 'bg-emerald-500/30 text-emerald-200 border border-emerald-400/80 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    // FRE 902 DOCKET EXHIBIT
                   </button>
                 </div>
               </div>
-              
-              <div className="text-xs text-green-300 leading-relaxed font-mono whitespace-pre-wrap select-text">
-                <span className="text-green-500/70">[DECRYPTED PLAINTEXT // FBI EVIDENCE EXHIBIT {data.evidence.exhibit || 'GX-1'}]:</span><br/>
-                "{data.evidence.text}"
-              </div>
-
-              <div className="flex flex-wrap justify-between items-center mt-4 text-[9px] text-gray-500 border-t border-green-900/30 pt-2 gap-2">
-                <span className="truncate max-w-xs">SHA-256: {data.evidence.sha256}</span>
-                <span className="text-green-500 font-bold">{data.evidence.admissibility}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-cyan-300 font-mono font-semibold">4096-RSA / AES-256-GCM</span>
+                <button
+                  onClick={() => {
+                    const omegaText = `[DECRYPTED PLAINTEXT // OMEGA EXHIBIT]:\n"Subject Identity: ${data.identity || 'John Doe, Contractor ID: 9921'}. Asset Involved: ${data.municipal_asset_id || 'GA-STATE-VEH-404'}. Anomaly Class: ${data.anomaly_type || 'ESPIONAGE'}. Coordinates: Lat ${data.coordinates?.lat ?? 33.7490}, Lng ${data.coordinates?.lng ?? -84.3880}."`;
+                    const textToCopy = viewMode === 'omega' ? omegaText : (data.evidence?.text || omegaText);
+                    navigator.clipboard.writeText(textToCopy);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                  className="px-2 py-1 hover:text-white transition-all bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-500/60 rounded text-xs flex items-center gap-1 cursor-pointer font-extrabold text-emerald-200"
+                >
+                  {copied ? <Check size={12} className="text-emerald-300" /> : <Copy size={12} />}
+                  <span>{copied ? 'COPIED' : 'COPY'}</span>
+                </button>
               </div>
             </div>
-          )}
+            
+            {viewMode === 'omega' ? (
+              <div className="text-xs text-emerald-300 leading-relaxed font-mono whitespace-pre-wrap select-text font-normal p-2.5 bg-black/60 rounded border border-emerald-900/40">
+                <span className="text-emerald-400 font-bold block mb-1">[DECRYPTED PLAINTEXT // OMEGA EXHIBIT]:</span>
+                "Subject Identity: {data.identity || 'John Doe, Contractor ID: 9921'}. Asset Involved: {data.municipal_asset_id || 'GA-STATE-VEH-404'}.<br/>
+                Anomaly Class: {data.anomaly_type || 'ESPIONAGE'}. Coordinates: Lat {data.coordinates?.lat ?? 33.7490}, Lng {data.coordinates?.lng ?? -84.3880}."
+              </div>
+            ) : (
+              <div className="text-xs text-emerald-300 leading-relaxed font-mono whitespace-pre-wrap select-text font-normal p-2.5 bg-black/60 rounded border border-emerald-900/40">
+                <span className="text-emerald-400 font-bold block mb-1">[DECRYPTED PLAINTEXT // FBI EVIDENCE EXHIBIT {data.evidence?.exhibit || 'GX-1'}]:</span>
+                "{data.evidence?.text || "Unauthorized exfiltration of 14 confidential formulation documents and an unreleased product sample ('Project Star') from corporate headquarters in Atlanta."}"
+              </div>
+            )}
+
+            <div className="flex flex-wrap justify-between items-center mt-3 text-xs text-zinc-300 border-t border-emerald-900/40 pt-2 gap-2">
+              <span className="truncate max-w-xs font-mono">
+                STATUS: <strong className="text-emerald-300 font-extrabold">{data.redaction_status || 'UNREDACTED_CLEARED_OMEGA'}</strong>
+              </span>
+              <span className="text-cyan-300 font-extrabold font-mono">
+                {viewMode === 'omega' ? 'DIRECT TELEMETRY ESCALATION // LEVEL 10+' : (data.evidence?.admissibility || 'FED. R. EVID. 902(11) CERTIFIED')}
+              </span>
+            </div>
+          </div>
 
           {/* Bottom Tags & Actions */}
           <div className="flex flex-wrap justify-between items-end mt-4 gap-2">
-            <div className="flex flex-wrap gap-2 text-[10px]">
+            <div className="flex flex-wrap gap-2 text-xs">
               {(data.entities || ['Coca-Cola', 'Georgia State Proprietary Tech']).map((ent, idx) => (
-                <span key={idx} className="border border-gray-700 text-gray-300 px-2 py-1 rounded">
+                <span key={idx} className="border border-zinc-600 bg-zinc-800/80 text-zinc-200 px-2.5 py-1 rounded font-semibold">
                   {ent}
                 </span>
               ))}
             </div>
             
-            <div className="flex items-center gap-4 text-[10px]">
+            <div className="flex items-center gap-3 text-xs font-bold">
               {onInspect && (
                 <button
                   onClick={onInspect}
-                  className="text-green-500 hover:text-green-400 flex items-center gap-1 underline decoration-green-900 cursor-pointer"
+                  className="text-cyan-300 hover:text-cyan-200 flex items-center gap-1 underline decoration-cyan-800 cursor-pointer"
                 >
                   inspect workaround ↗
                 </button>
               )}
-              <span className="border border-green-500/30 bg-green-900/20 text-green-400 px-2 py-1 rounded flex items-center gap-1">
-                <CheckCircle2 size={10} /> {data.workaroundStatus || 'Deployed'}
+              <span className="border border-emerald-500/50 bg-emerald-950/70 text-emerald-300 px-2.5 py-1 rounded flex items-center gap-1.5 shadow-[0_0_8px_rgba(16,185,129,0.3)]">
+                <CheckCircle2 size={12} className="text-emerald-400" /> {data.workaroundStatus || 'Deployed'}
               </span>
             </div>
           </div>

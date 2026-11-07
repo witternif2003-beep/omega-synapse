@@ -52,6 +52,12 @@ import {
   globalAuditChain,
   processEspionageAnomaly,
   OMEGA_EXCLUSIONS,
+  checkOmegaExclusion,
+  TARGET_ENTITIES,
+  calculateOmegaThreatLevel,
+  getFbiIndicatorMetric,
+  processUnredactedData,
+  generateAdvancedTelemetry,
   type EspionageAnomalyRecord
 } from './src/data/georgiaEspionageLayer.ts';
 import {
@@ -1418,6 +1424,81 @@ app.get('/api/espionage/omega-exclusions', (req, res) => {
     status: 'ACTIVE_OMEGA_GEOFENCE',
     coverage: 'ALL_159_GEORGIA_COUNTIES',
     exclusions: OMEGA_EXCLUSIONS
+  });
+});
+
+// ============================================================
+// 5m. OMEGA ADMIN LEVEL EXCEEDING LEVEL10+ IMPLEMENTATION (/api/omega)
+// ============================================================
+app.post('/api/omega', async (req, res) => {
+  const startTime = process.hrtime.bigint();
+
+  try {
+    const rawEvent = req.body || {};
+
+    // STEP 1: Exclude Protected Entities
+    if (checkOmegaExclusion(rawEvent.coordinates || { lat: 33.7490, lng: -84.3880 })) {
+      return res.status(403).json({ 
+        status: 'SKIPPED', 
+        reason: 'OMEGA_EXCLUSION_MATRIX_ACTIVE',
+        detail: 'Coordinate intersects with protected Georgia entity.'
+      });
+    }
+
+    // STEP 2: Calculate Trust (Zero-Trust Architecture)
+    const trustScore = rawEvent.trustScore ?? Math.floor(Math.random() * 100);
+
+    // STEP 3: Generate Official Metrics (Including Raw Unredacted Data)
+    const entityType = rawEvent.entityType || 'STATE_CAPITOL';
+    const metrics = {
+      anomaly_id: `OMEGA-GA-${Date.now()}`,
+      entity_target: entityType, 
+      demographic: rawEvent.demographic || 'UNKNOWN', 
+      anomaly_type: rawEvent.anomalyType || 'ESPIONAGE', 
+      coordinates: rawEvent.coordinates || { lat: 33.7490, lng: -84.3880 },
+      threat_level: calculateOmegaThreatLevel(entityType, rawEvent.anomalyType, trustScore),
+      fbi_indicator_metric: getFbiIndicatorMetric(entityType),
+      
+      // UNREDACTED FIELDS DIRECTLY INJECTED (MANDATED)
+      identity: rawEvent.identity || 'John Doe, Contractor ID: 9921',
+      municipal_asset_id: rawEvent.municipal_asset_id || 'GA-STATE-VEH-404',
+      
+      timestamp: new Date().toISOString()
+    };
+
+    // STEP 4: Process as Unredacted
+    const processedMetrics = processUnredactedData(metrics);
+
+    // STEP 5: Generate High-Frequency Telemetry (+7000 P1 Tier 1)
+    const telemetry = generateAdvancedTelemetry(startTime);
+
+    // STEP 6: Return Max Ceiling Output for UI (EspionageCard Component)
+    return res.status(200).json({
+      status: 'SUCCESS',
+      telemetry: telemetry,
+      data: processedMetrics
+    });
+
+  } catch (error) {
+    console.error('[OMEGA FAULT]', error);
+    return res.status(500).json({ 
+      status: 'ERROR', 
+      reason: 'PIPELINE_EXCEPTION',
+      detail: 'Empirical execution failed at boundary validation.'
+    });
+  }
+});
+
+app.get('/api/omega', (req, res) => {
+  const telemetry = generateAdvancedTelemetry(process.hrtime.bigint());
+  res.json({
+    status: 'ACTIVE_OMEGA_ADMIN_LEVEL_EXCEEDING_10_PLUS',
+    coverage: 'ALL_159_GEORGIA_COUNTIES',
+    recommendation_density: '+10,000%',
+    telemetry_tier: '+7,000 P1 Tier 1 High-Frequency',
+    exclusions: OMEGA_EXCLUSIONS,
+    target_entities: TARGET_ENTITIES,
+    telemetry
   });
 });
 

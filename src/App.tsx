@@ -55,6 +55,7 @@ import {
   processAnomaly,
   processEspionageAnomaly,
   OMEGA_EXCLUSIONS,
+  TARGET_ENTITIES,
   calculateOmegaThreatLevel,
   getFbiIndicatorMetric,
   type EspionageAnomalyRecord,
@@ -225,12 +226,13 @@ export default function OmegaGeorgiaApp() {
   const rateQueue = useRef<number[]>([]);
   const sceneCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // SEVERITY BADGE STYLES (Exact from reference)
+  // SEVERITY BADGE STYLES (Max Ceiling Contrast & Resolution)
   const SEV_CLS: Record<string, string> = {
-    critical: 'border-red-500/60 text-red-300',
-    high: 'border-orange-500/60 text-orange-300',
-    medium: 'border-yellow-500/60 text-yellow-300',
-    info: 'border-zinc-700 text-zinc-300'
+    critical: 'border-rose-500/80 bg-rose-950/80 text-rose-200 font-extrabold shadow-[0_0_10px_rgba(244,63,94,0.35)]',
+    high: 'border-amber-500/80 bg-amber-950/80 text-amber-200 font-extrabold shadow-[0_0_10px_rgba(245,158,11,0.35)]',
+    medium: 'border-cyan-500/80 bg-cyan-950/80 text-cyan-200 font-extrabold shadow-[0_0_10px_rgba(6,182,212,0.35)]',
+    info: 'border-slate-600 bg-slate-900/80 text-slate-100 font-bold',
+    low: 'border-slate-600 bg-slate-900/80 text-slate-100 font-bold'
   };
 
   // Audio tone generator
@@ -925,43 +927,43 @@ export default function OmegaGeorgiaApp() {
           <div className="text-zinc-500 text-[10px] tracking-[0.25em] uppercase px-1 mb-2">
             // OMEGA STANDARD — LIVE TELEMETRY
           </div>
-          <div className="glass p-0">
-            <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
-              <div className="p-4 border-b md:border-b-0 md:border-r border-white/5">
-                <div className="text-zinc-500 text-xs">CRITICAL</div>
-                <div className="text-2xl text-red-400 font-bold">{tallies.critical}</div>
+          <div className="glass p-0 border border-white/15 shadow-[0_0_30px_rgba(0,255,136,0.12)]">
+            <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 divide-y md:divide-y-0 md:divide-x divide-white/10">
+              <div className="p-4 bg-rose-950/20 hover:bg-rose-950/30 transition-colors">
+                <div className="text-rose-400 font-bold text-[11px] tracking-wider uppercase">CRITICAL</div>
+                <div className="text-2xl text-rose-200 font-extrabold drop-shadow-[0_0_12px_rgba(244,63,94,0.5)]">{tallies.critical}</div>
               </div>
-              <div className="p-4 border-b md:border-b-0 md:border-r border-white/5">
-                <div className="text-zinc-500 text-xs">HIGH</div>
-                <div className="text-2xl text-orange-400 font-bold">{tallies.high}</div>
+              <div className="p-4 bg-amber-950/20 hover:bg-amber-950/30 transition-colors">
+                <div className="text-amber-400 font-bold text-[11px] tracking-wider uppercase">HIGH</div>
+                <div className="text-2xl text-amber-200 font-extrabold drop-shadow-[0_0_12px_rgba(245,158,11,0.5)]">{tallies.high}</div>
               </div>
-              <div className="p-4 border-b md:border-b-0 md:border-r border-white/5">
-                <div className="text-zinc-500 text-xs">MEDIUM</div>
-                <div className="text-2xl text-yellow-400 font-bold">{tallies.medium}</div>
+              <div className="p-4 bg-cyan-950/20 hover:bg-cyan-950/30 transition-colors">
+                <div className="text-cyan-400 font-bold text-[11px] tracking-wider uppercase">MEDIUM</div>
+                <div className="text-2xl text-cyan-200 font-extrabold drop-shadow-[0_0_12px_rgba(6,182,212,0.5)]">{tallies.medium}</div>
               </div>
-              <div className="p-4 border-b md:border-b-0 md:border-r border-white/5">
-                <div className="text-zinc-500 text-xs">INFO</div>
-                <div className="text-2xl text-zinc-400 font-bold">{tallies.info}</div>
+              <div className="p-4 bg-slate-900/30 hover:bg-slate-900/40 transition-colors">
+                <div className="text-slate-300 font-bold text-[11px] tracking-wider uppercase">INFO</div>
+                <div className="text-2xl text-slate-100 font-extrabold">{tallies.info}</div>
               </div>
-              <div className="p-4 border-b xl:border-b-0 xl:border-r border-white/5">
-                <div className="text-zinc-500 text-xs">EVT / MIN</div>
-                <div className="text-2xl acc-text font-bold">{evtRate}</div>
+              <div className="p-4 bg-emerald-950/20 hover:bg-emerald-950/30 transition-colors">
+                <div className="text-emerald-400 font-bold text-[11px] tracking-wider uppercase">EVT / MIN</div>
+                <div className="text-2xl text-emerald-300 font-extrabold drop-shadow-[0_0_12px_rgba(16,185,129,0.5)]">{evtRate}</div>
               </div>
-              <div className="p-4 border-b xl:border-b-0 xl:border-r border-white/5">
-                <div className="text-zinc-500 text-xs">STORED</div>
-                <div className="text-2xl text-cyan-300 font-bold">
+              <div className="p-4 bg-sky-950/20 hover:bg-sky-950/30 transition-colors">
+                <div className="text-sky-400 font-bold text-[11px] tracking-wider uppercase">STORED</div>
+                <div className="text-2xl text-sky-200 font-extrabold">
                   {health?.events ?? events.length + 368}
                 </div>
               </div>
-              <div className="p-4 border-b xl:border-b-0 xl:border-r border-white/5">
-                <div className="text-zinc-500 text-xs">SOURCES</div>
-                <div className="text-2xl text-cyan-300 font-bold">
+              <div className="p-4 bg-indigo-950/20 hover:bg-indigo-950/30 transition-colors">
+                <div className="text-indigo-400 font-bold text-[11px] tracking-wider uppercase">SOURCES</div>
+                <div className="text-2xl text-indigo-200 font-extrabold">
                   {allSources.length || 13}
                 </div>
               </div>
-              <div className="p-4">
-                <div className="text-zinc-500 text-xs">POLLERS</div>
-                <div className="text-2xl acc-text font-bold">10/10 OK</div>
+              <div className="p-4 bg-teal-950/20 hover:bg-teal-950/30 transition-colors">
+                <div className="text-teal-300 font-bold text-[11px] tracking-wider uppercase">ADMIN TERMINALS</div>
+                <div className="text-2xl text-teal-200 font-extrabold drop-shadow-[0_0_12px_rgba(20,184,166,0.5)]">88 ACTIVE</div>
               </div>
             </div>
           </div>
@@ -1882,39 +1884,31 @@ export default function OmegaGeorgiaApp() {
                 )}
               </div>
 
-              {/* Anomaly Filters & Search */}
-              <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-zinc-500 text-[10px]">THREAT:</span>
-                  {['ALL', 'CRITICAL', 'HIGH', 'MEDIUM'].map((lvl) => (
-                    <button
-                      key={lvl}
-                      onClick={() => setEspionageThreatFilter(lvl)}
-                      className={`px-2 py-0.5 rounded border text-[10px] transition-colors ${
-                        espionageThreatFilter === lvl
-                          ? 'border-emerald-400 text-emerald-300 bg-emerald-950/50 font-bold'
-                          : 'border-zinc-800 text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      {lvl}
-                    </button>
-                  ))}
-
-                  <span className="text-zinc-500 text-[10px] ml-2">CATEGORY:</span>
+              {/* Anomaly Filters & Search (Max Ceiling Readability & Dynamic Coordinating Accents) */}
+              <div className="space-y-3 font-mono text-xs">
+                
+                {/* Category Selector Tabs */}
+                <div className="flex flex-wrap items-center gap-1.5 p-1 bg-black/70 border border-white/15 rounded-lg">
                   {[
-                    { label: 'ALL', val: 'ALL' },
-                    { label: 'CAPITOL PERIMETER', val: 'CAPITOL_PERIMETER_SURVEILLANCE' },
-                    { label: 'FLEET TELEMETRY', val: 'FLEET_TELEMETRY_INGRESS' },
-                    { label: 'AEROSPACE CONTRACTOR', val: 'ECONOMIC_ESPIONAGE' },
-                    { label: 'SCADA PROBE', val: 'SCADA_PROBE' }
+                    { id: 'ALL', label: 'ALL INTEL (170)', active: 'border-emerald-400 text-emerald-200 bg-emerald-950/80 shadow-[0_0_12px_rgba(16,185,129,0.4)]' },
+                    { id: 'ADMIN_TERMINALS', label: '⚡ ADMIN TERMINALS (88)', active: 'border-cyan-400 text-cyan-200 bg-cyan-950/80 shadow-[0_0_12px_rgba(6,182,212,0.4)]' },
+                    { id: 'AIRPORTS', label: '✈️ AIRPORTS (18)', active: 'border-sky-400 text-sky-200 bg-sky-950/80 shadow-[0_0_12px_rgba(56,189,248,0.4)]' },
+                    { id: 'HIGHWAYS_ITS', label: '🛣️ HIGHWAYS & ITS (6)', active: 'border-emerald-400 text-emerald-200 bg-emerald-950/80 shadow-[0_0_12px_rgba(16,185,129,0.4)]' },
+                    { id: 'TRANSIT_FLEETS', label: '🚆 TRANSIT & FLEETS (10)', active: 'border-teal-400 text-teal-200 bg-teal-950/80 shadow-[0_0_12px_rgba(20,184,166,0.4)]' },
+                    { id: 'ENTERPRISE', label: '🏢 ENTERPRISE & TRADE (7)', active: 'border-amber-400 text-amber-200 bg-amber-950/80 shadow-[0_0_12px_rgba(245,158,11,0.4)]' },
+                    { id: 'MEDICAL_CDC', label: '🏥 MEDICAL & CDC (12)', active: 'border-rose-400 text-rose-200 bg-rose-950/80 shadow-[0_0_12px_rgba(244,63,94,0.4)]' },
+                    { id: 'BROADCAST_MEDIA', label: '📡 BROADCAST & MEDIA (5)', active: 'border-purple-400 text-purple-200 bg-purple-950/80 shadow-[0_0_12px_rgba(168,85,247,0.4)]' },
+                    { id: 'TELECOM_FIBER', label: '🌐 TELECOM & FIBER (10)', active: 'border-indigo-400 text-indigo-200 bg-indigo-950/80 shadow-[0_0_12px_rgba(99,102,241,0.4)]' },
+                    { id: 'CAPITOL', label: '🏛️ CAPITOL PERIMETER (14)', active: 'border-yellow-400 text-yellow-200 bg-yellow-950/80 shadow-[0_0_12px_rgba(234,179,8,0.4)]' },
+                    { id: 'SCADA', label: '⚙️ SCADA & UTILITIES (12)', active: 'border-orange-400 text-orange-200 bg-orange-950/80 shadow-[0_0_12px_rgba(249,115,22,0.4)]' }
                   ].map((cat) => (
                     <button
-                      key={cat.val}
-                      onClick={() => setEspionageCategoryFilter(cat.val)}
-                      className={`px-2 py-0.5 rounded border text-[10px] transition-colors ${
-                        espionageCategoryFilter === cat.val
-                          ? 'border-cyan-400 text-cyan-300 bg-cyan-950/50 font-bold'
-                          : 'border-zinc-800 text-zinc-400 hover:text-white'
+                      key={cat.id}
+                      onClick={() => setEspionageCategoryFilter(cat.id)}
+                      className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all cursor-pointer border ${
+                        espionageCategoryFilter === cat.id
+                          ? cat.active
+                          : 'border-transparent text-zinc-300 hover:text-white hover:bg-white/5'
                       }`}
                     >
                       {cat.label}
@@ -1922,24 +1916,77 @@ export default function OmegaGeorgiaApp() {
                   ))}
                 </div>
 
-                <div className="relative min-w-[220px]">
-                  <Search size={12} className="absolute left-2.5 top-2.5 text-zinc-500" />
-                  <input
-                    type="text"
-                    value={espionageSearch}
-                    onChange={(e) => setEspionageSearch(e.target.value)}
-                    placeholder="Search by ID, facility, metric, county..."
-                    className="w-full bg-black/60 border border-white/10 pl-7 pr-3 py-1 rounded text-xs text-white focus:outline-none focus:border-emerald-400 font-mono"
-                  />
+                {/* Threat Filter & Search Row */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-zinc-400 text-xs font-bold mr-1">THREAT LEVEL:</span>
+                    {[
+                      { id: 'ALL', label: 'ALL THREATS', active: 'border-emerald-400 text-emerald-200 bg-emerald-950/80 font-extrabold' },
+                      { id: 'CRITICAL', label: 'CRITICAL', active: 'border-rose-500 text-rose-200 bg-rose-950/80 font-extrabold shadow-[0_0_8px_rgba(244,63,94,0.4)]' },
+                      { id: 'HIGH', label: 'HIGH', active: 'border-amber-500 text-amber-200 bg-amber-950/80 font-extrabold shadow-[0_0_8px_rgba(245,158,11,0.4)]' },
+                      { id: 'MEDIUM', label: 'MEDIUM', active: 'border-cyan-500 text-cyan-200 bg-cyan-950/80 font-extrabold shadow-[0_0_8px_rgba(6,182,212,0.4)]' },
+                      { id: 'LOW', label: 'LOW', active: 'border-slate-500 text-slate-200 bg-slate-900/80 font-bold' }
+                    ].map((lvl) => (
+                      <button
+                        key={lvl.id}
+                        onClick={() => setEspionageThreatFilter(lvl.id)}
+                        className={`px-2.5 py-1 rounded border text-xs transition-all cursor-pointer ${
+                          espionageThreatFilter === lvl.id
+                            ? lvl.active
+                            : 'border-white/10 text-zinc-400 hover:text-white hover:border-white/20'
+                        }`}
+                      >
+                        {lvl.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="relative min-w-[260px] flex-1 max-w-md">
+                    <Search size={14} className="absolute left-3 top-2.5 text-cyan-400" />
+                    <input
+                      type="text"
+                      value={espionageSearch}
+                      onChange={(e) => setEspionageSearch(e.target.value)}
+                      placeholder="Search 170 anomalies by county, facility, metric, ID..."
+                      className="w-full bg-black/80 border border-white/20 pl-9 pr-3 py-1.5 rounded-md text-xs text-white placeholder:text-zinc-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 font-mono shadow-[inset_0_0_12px_rgba(0,0,0,0.6)]"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Anomaly Ingestion Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Anomaly Ingestion Cards (High-Resolution Grid) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                 {GEORGIA_ESPIONAGE_ANOMALIES
                   .filter((item) => {
                     if (espionageThreatFilter !== 'ALL' && item.threat_level !== espionageThreatFilter) return false;
-                    if (espionageCategoryFilter !== 'ALL' && item.type !== espionageCategoryFilter) return false;
+                    
+                    // Comprehensive category routing
+                    if (espionageCategoryFilter !== 'ALL') {
+                      if (espionageCategoryFilter === 'ADMIN_TERMINALS') {
+                        if (!item.type.startsWith('ADMIN_') && !item.anomaly_id.includes('-ADM-')) return false;
+                      } else if (espionageCategoryFilter === 'AIRPORTS') {
+                        if (!item.type.includes('AIRPORT')) return false;
+                      } else if (espionageCategoryFilter === 'HIGHWAYS_ITS') {
+                        if (item.type !== 'HIGHWAY_ITS_PROBE') return false;
+                      } else if (espionageCategoryFilter === 'TRANSIT_FLEETS') {
+                        if (!item.type.includes('TRANSIT') && !item.type.includes('FLEET')) return false;
+                      } else if (espionageCategoryFilter === 'ENTERPRISE') {
+                        if (item.type !== 'ENTERPRISE_TRADE_SECRET' && item.type !== 'ECONOMIC_ESPIONAGE') return false;
+                      } else if (espionageCategoryFilter === 'MEDICAL_CDC') {
+                        if (!item.type.includes('MEDICAL') && !item.type.includes('HOSPITAL')) return false;
+                      } else if (espionageCategoryFilter === 'BROADCAST_MEDIA') {
+                        if (!item.type.includes('BROADCAST') && !item.type.includes('MEDIA')) return false;
+                      } else if (espionageCategoryFilter === 'TELECOM_FIBER') {
+                        if (!item.type.includes('TELECOM') && !item.type.includes('OPTICAL') && !item.type.includes('CELLULAR')) return false;
+                      } else if (espionageCategoryFilter === 'CAPITOL') {
+                        if (item.type !== 'CAPITOL_PERIMETER_SURVEILLANCE') return false;
+                      } else if (espionageCategoryFilter === 'SCADA') {
+                        if (item.type !== 'SCADA_PROBE') return false;
+                      } else if (item.type !== espionageCategoryFilter) {
+                        return false;
+                      }
+                    }
+
                     if (espionageSearch) {
                       const q = espionageSearch.toLowerCase();
                       const match =
@@ -1956,40 +2003,42 @@ export default function OmegaGeorgiaApp() {
                     <div
                       key={anomaly.anomaly_id}
                       onClick={() => setSelectedEspionageRecord(anomaly)}
-                      className="bg-black/50 hover:bg-black/80 border border-white/10 hover:border-emerald-500/60 p-3.5 rounded transition-all cursor-pointer space-y-2.5 group relative"
+                      className="bg-[#070d18]/90 hover:bg-[#0b1526] border border-white/15 hover:border-cyan-400/80 p-4 rounded-lg transition-all cursor-pointer space-y-3 group relative shadow-[0_0_20px_rgba(0,0,0,0.5)] hover:shadow-[0_0_24px_rgba(6,182,212,0.2)]"
                     >
-                      <div className="flex items-center justify-between gap-2 border-b border-white/5 pb-2">
+                      <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 font-bold">
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-100 font-extrabold border border-white/10">
                             #{anomaly.priorityRank}
                           </span>
-                          <span className="text-xs font-mono font-bold text-white group-hover:text-emerald-300 transition-colors">
+                          <span className="text-xs font-mono font-extrabold text-cyan-300 group-hover:text-emerald-300 transition-colors tracking-wide">
                             {anomaly.anomaly_id}
                           </span>
-                          <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border uppercase font-bold ${SEV_CLS[anomaly.threat_level.toLowerCase()] || SEV_CLS.high}`}>
+                          <span className={`text-[9px] font-mono px-2 py-0.5 rounded border uppercase font-extrabold ${SEV_CLS[anomaly.threat_level.toLowerCase()] || SEV_CLS.high}`}>
                             {anomaly.threat_level}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-1.5 text-[9px] font-mono">
-                          <span className="text-zinc-500">COUNTY:</span>
-                          <span className="text-cyan-300 font-bold">{anomaly.county}</span>
+                        <div className="flex items-center gap-1.5 text-[10px] font-mono">
+                          <span className="text-zinc-400 font-semibold">COUNTY:</span>
+                          <span className="text-amber-200 font-extrabold bg-amber-950/60 border border-amber-500/50 px-2 py-0.5 rounded">
+                            {anomaly.county}
+                          </span>
                         </div>
                       </div>
 
                       <div>
-                        <h4 className="text-xs font-bold text-zinc-200 group-hover:text-white line-clamp-1">
+                        <h4 className="text-sm font-bold text-white group-hover:text-cyan-200 line-clamp-1 leading-snug">
                           {anomaly.facility}
                         </h4>
-                        <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono text-zinc-400 mt-0.5">
-                          <span>
+                        <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-zinc-300 mt-1">
+                          <span className="text-emerald-400 font-semibold">
                             📍 WGS 84: <strong>{anomaly.coordinates.lat.toFixed(4)}° N, {Math.abs(anomaly.coordinates.lng).toFixed(4)}° W</strong>
                           </span>
-                          <span className="text-zinc-600">·</span>
-                          <span className="text-amber-300 font-bold">
-                            DEMO: {anomaly.demographics.category} ({anomaly.demographics.gender})
+                          <span className="text-zinc-500">·</span>
+                          <span className="text-cyan-300 font-bold">
+                            DEMO: {anomaly.demographics.category}
                           </span>
-                          <span className="text-zinc-600">·</span>
+                          <span className="text-zinc-500">·</span>
                           <span className="text-emerald-400 font-bold">
                             {anomaly.redaction_status === 'REDACTED' ? '🔒 REDACTED PII' : '📄 CLEARED'}
                           </span>
@@ -1997,37 +2046,39 @@ export default function OmegaGeorgiaApp() {
                       </div>
 
                       {/* FBI Metric Badge */}
-                      <div className="bg-[#052e16]/30 border border-[#166534] p-2 rounded text-[10px] font-mono space-y-1">
-                        <div className="flex items-center justify-between text-[#4ade80] font-bold text-[9px]">
+                      <div className="bg-[#081324]/90 border border-cyan-500/40 p-2.5 rounded text-xs font-mono space-y-1">
+                        <div className="flex items-center justify-between text-cyan-300 font-extrabold text-[10px]">
                           <span>// FBI CJIS METRIC: {anomaly.fbi_indicator_metrics.cjisControl}</span>
-                          <span className="text-cyan-300">SCORE: {anomaly.fbi_indicator_metrics.indicatorScore.toFixed(2)}</span>
+                          <span className="text-amber-300 font-extrabold">SCORE: {anomaly.fbi_indicator_metrics.indicatorScore.toFixed(2)}</span>
                         </div>
-                        <div className="text-zinc-300 truncate">
+                        <div className="text-slate-100 font-medium text-[11px] truncate">
                           {anomaly.fbi_indicator_metrics.surveillanceVector}
                         </div>
                       </div>
 
                       {/* SI Measurements */}
-                      <div className="text-[10px] font-mono text-cyan-300 bg-cyan-950/20 border border-cyan-800/30 px-2 py-1 rounded truncate">
+                      <div className="text-[11px] font-mono text-teal-200 bg-teal-950/50 border border-teal-500/40 px-2.5 py-1 rounded font-semibold truncate">
                         ⚡ SI: {anomaly.siMeasurements}
                       </div>
 
                       {/* Decrypted Plaintext Terminal Snippet */}
-                      <div className="bg-[#030712] border border-emerald-900/40 p-2.5 rounded font-mono text-[10px] space-y-1">
-                        <div className="flex items-center justify-between text-[9px] text-zinc-500">
-                          <span className="text-emerald-400 font-bold">// DECRYPTED PLAINTEXT EXTRACT</span>
-                          <span className="truncate max-w-[150px]">{anomaly.decryptionCipher.split('/')[0]}</span>
+                      <div className="bg-[#02050b] border border-emerald-500/50 p-3 rounded font-mono text-xs space-y-1.5 shadow-[inset_0_0_16px_rgba(0,0,0,0.9)]">
+                        <div className="flex items-center justify-between text-[10px] text-zinc-400">
+                          <span className="text-emerald-400 font-extrabold">// DECRYPTED PLAINTEXT EXTRACT</span>
+                          <span className="truncate max-w-[170px] text-slate-300">{anomaly.decryptionCipher.split('/')[0]}</span>
                         </div>
-                        <div className="text-[#4ade80] line-clamp-2 leading-relaxed">
+                        <div className="text-[#34d399] line-clamp-2 leading-relaxed font-normal select-text">
                           {anomaly.decryptedPlaintext}
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between text-[10px] font-mono pt-1 text-zinc-400 group-hover:text-emerald-400">
-                        <span className="truncate max-w-[280px]">Statute: {anomaly.legalStatuteCitation}</span>
-                        <div className="flex items-center gap-1 shrink-0 font-bold">
+                      <div className="flex items-center justify-between text-xs font-mono pt-1 text-zinc-300 group-hover:text-cyan-300">
+                        <span className="truncate max-w-[280px] text-indigo-200 bg-indigo-950/50 border border-indigo-500/40 px-2 py-0.5 rounded text-[10px] font-medium">
+                          Statute: {anomaly.legalStatuteCitation}
+                        </span>
+                        <div className="flex items-center gap-1 shrink-0 font-extrabold text-cyan-300 group-hover:text-white">
                           <span>Inspect FBI Dossier</span>
-                          <ChevronRight size={12} />
+                          <ChevronRight size={14} />
                         </div>
                       </div>
                     </div>
