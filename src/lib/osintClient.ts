@@ -89,6 +89,26 @@ export interface OsintFilingRow {
   url: string;
 }
 
+/** One reported transaction line from a live Form 4 document. */
+export interface OsintTransaction {
+  accession: string;
+  owner: string;
+  roleBits: number;
+  title: string;
+  filed: string;
+  traded: string;
+  code: string;
+  shares: number;
+  price: number;
+  after: number;
+  ownership: string;
+  nature: string;
+  security: string;
+  derivative: boolean;
+  tenb5one: boolean;
+  url: string;
+}
+
 export interface OsintInsiderPayload {
   ok: boolean;
   issuer: {
@@ -104,6 +124,7 @@ export interface OsintInsiderPayload {
   cacheSeconds: number;
   error?: string;
   filings: OsintFilingRow[];
+  transactions: OsintTransaction[];
   people: number;
 }
 
@@ -226,6 +247,7 @@ export function relativeTime(iso: string): string {
 
 export const FEED_URL = '/api/osint/feed';
 export const INSIDERS_URL = '/api/osint/insiders';
+export const FINANCIALS_URL = '/api/osint/financials';
 export const FILING_URL = '/api/osint/filing';
 
 export async function loadFeed(): Promise<OsintFeedPayload> {
