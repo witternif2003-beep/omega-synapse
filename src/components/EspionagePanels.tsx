@@ -3,6 +3,8 @@ import { ArrowUpRight, Building2, Landmark, RefreshCw, Search, UserRound, Users 
 import { GA_BANK_FILERS } from '../data/gaBankFilers.ts';
 import { individualIndicators, money, type PersonView } from '../lib/financialIndicators.ts';
 import { IndicatorGrid, peopleFromLive } from './EspionageFeedRow.tsx';
+import { CrimeIncidentList, CrimeQueuePanel } from './CrimeQueue.tsx';
+import { detectPersonCrimes } from '../lib/crimeScreensPersonB.ts';
 import type { RoleFilter } from './EspionageFeedRow.tsx';
 import {
   filingFromLive,
@@ -21,6 +23,10 @@ import {
  * (officer), non-employee director, non-employee owner, or other reporting person, because
  * that is what the filing reports. Contractor status is not a field in any SEC or FDIC
  * publication, so no contractor label is claimed.
+ *
+ * Under the twenty-point set each person carries every financial-crime screen that fired on
+ * their own published lines, with the dollar figure and the formula behind it, and the panel
+ * runs a detection queue across the whole insider roster of the selected company.
  */
 
 export function IndividualsPanel({
@@ -79,6 +85,15 @@ export function IndividualsPanel({
   const indicators = useMemo(
     () => (person ? individualIndicators(person, filings) : []),
     [person, filings],
+  );
+
+  const crimes = useMemo(
+    () => detectPersonCrimes(people, data?.transactions ?? []),
+    [people, data?.transactions],
+  );
+  const personCrimes = useMemo(
+    () => (person ? crimes.filter((incident) => incident.id.startsWith(`${person.key}:`)) : []),
+    [crimes, person],
   );
 
   const counts = useMemo(() => {
@@ -248,6 +263,12 @@ export function IndividualsPanel({
                 caption="each value read from this person's Form 4 fields and the FDIC figures for their bank"
               />
 
+              <CrimeIncidentList
+                incidents={personCrimes}
+                title="Financial crime screens fired on this person"
+                note="Computed from this person's own Form 4 lines: dates, codes, shares, price, holdings, ownership and the 10b5-1 flag. Each row opens the formula, its inputs and the threshold applied."
+              />
+
               <div>
                 <div className="text-[9px] uppercase tracking-widest text-zinc-500 mb-1">Filings on record</div>
                 <div className="space-y-1">
@@ -276,6 +297,15 @@ export function IndividualsPanel({
             </div>
           )}
         </div>
+      </div>
+
+      <div className="p-2 border-t border-zinc-800">
+        <CrimeQueuePanel
+          incidents={crimes}
+          scope={`every insider in ${data?.issuer.name ?? 'this company'}'s Form 4 filings`}
+          note="Individual screens fire per published Form 4 line and the cluster screen fires when three or more insiders sell inside ten days. Amounts are shares × reported price; an unpriced line carries no dollar figure."
+          max={40}
+        />
       </div>
     </div>
   );
