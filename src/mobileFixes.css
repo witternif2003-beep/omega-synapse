@@ -1,0 +1,136 @@
+/* ============================================================================
+   PHONE LAYOUT
+   ----------------------------------------------------------------------------
+   Three problems on a handset, fixed without changing desktop:
+
+   1. The county table has eight columns and only the first one fits, so the
+      numbers you actually came for sat off the right edge. On a phone the table
+      now keeps county, institutions, branches and deposits, and drops FIPS, HHI,
+      the score bar and the chevron.
+   2. Everything was spaced for a desktop: 16px panel padding, 16px gaps and
+      24px figures. On a 390px screen that is most of the screen. Phone spacing
+      is tightened here.
+   3. The build tag sat at the very bottom of the visual viewport, which on iOS is
+      behind the browser toolbar. It is lifted above it on small screens.
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  /* --- 1. County table: keep the columns that carry the numbers -------------- */
+  table:has(thead th.w-28) th:nth-child(2),
+  table:has(thead th.w-28) td:nth-child(2),
+  table:has(thead th.w-28) th:nth-child(6),
+  table:has(thead th.w-28) td:nth-child(6),
+  table:has(thead th.w-28) th:nth-child(7),
+  table:has(thead th.w-28) td:nth-child(7),
+  table:has(thead th.w-28) th:nth-child(8),
+  table:has(thead th.w-28) td:nth-child(8) {
+    display: none;
+  }
+
+  table:has(thead th.w-28) td:first-child {
+    white-space: normal;
+    line-height: 1.25;
+  }
+
+  table:has(thead th.w-28) td,
+  table:has(thead th.w-28) th {
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
+    font-size: 10.5px;
+  }
+
+  /* --- 2. Tighter phone layout --------------------------------------------- */
+  #page section {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+
+  [class~="p-4"] {
+    padding: 0.75rem !important;
+  }
+
+  [class~="p-3"] {
+    padding: 0.55rem !important;
+  }
+
+  [class~="space-y-4"] > * + * {
+    margin-top: 0.6rem !important;
+  }
+
+  [class~="space-y-3"] > * + * {
+    margin-top: 0.5rem !important;
+  }
+
+  [class~="gap-4"] {
+    gap: 0.6rem !important;
+  }
+
+  [class~="gap-3"] {
+    gap: 0.5rem !important;
+  }
+
+  /* Figures a notch smaller so "88 ACTIVE" and long labels stay inside tiles. */
+  [class~="text-2xl"] {
+    font-size: 1.35rem !important;
+    line-height: 1.7rem !important;
+  }
+
+  /* The sticky table header needs less room when four columns remain. */
+  thead th {
+    padding-top: 0.3rem;
+    padding-bottom: 0.3rem;
+  }
+
+  /* --- 3. Build tag above the browser toolbar ------------------------------- */
+  .build-stamp {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 70px) !important;
+    font-size: 9px !important;
+    opacity: 0.9;
+  }
+}
+
+/* ============================================================================
+   ACCENT MATCH
+   ----------------------------------------------------------------------------
+   The telemetry strip was the loudest thing on the page: rose, amber, cyan,
+   slate, emerald, sky, indigo and purple all at once. Severity colour stays,
+   because it carries meaning; the decorative blue and indigo tiles are pulled
+   onto the panel palette so the strip reads as one family.
+   ========================================================================== */
+
+[class~="text-sky-200"],
+[class~="text-sky-400"] {
+  color: #a9c7dc !important;
+}
+
+[class~="text-indigo-200"],
+[class~="text-indigo-400"] {
+  color: #b0bcd6 !important;
+}
+
+[class~="text-purple-300"] {
+  color: #b6aed0 !important;
+}
+
+[class~="bg-sky-950/20"],
+[class~="hover:bg-sky-950/30"]:hover {
+  background-color: rgba(22, 42, 58, 0.55) !important;
+}
+
+[class~="bg-indigo-950/20"],
+[class~="hover:bg-indigo-950/30"]:hover {
+  background-color: rgba(28, 34, 58, 0.5) !important;
+}
+
+[class~="bg-purple-950/60"] {
+  background-color: rgba(42, 34, 62, 0.8) !important;
+}
+
+/* Side icons and rule lines pick up the same cold stroke as the panels. */
+[class~="text-cyan-400"] {
+  color: #7fb6cf !important;
+}
+
+[class~="text-indigo-300"] {
+  color: #a8b6d4 !important;
+}

@@ -9,6 +9,7 @@ import { installEspionageTabStrobe } from './lib/espionageTabStrobe.ts';
 import './index.css';
 import './espionagePinned.css';
 import './ciaPanels.css';
+import './mobileFixes.css';
 
 createRoot(document.getElementById('root')!).render(
   <>

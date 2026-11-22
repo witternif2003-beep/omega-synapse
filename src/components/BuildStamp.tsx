@@ -29,7 +29,7 @@ const style: CSSProperties = {
 
 export default function BuildStamp() {
   return (
-    <div style={style} title="Build deployed to this page">
+    <div className="build-stamp" style={style} title="Build deployed to this page">
       BUILD {__BUILD_ID__}
     </div>
   );
