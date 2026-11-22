@@ -60,15 +60,9 @@
   background-color: var(--cia-surface-1) !important;
 }
 
-[class~="bg-[#0a1418]"],
-[class~="bg-[#03080a]"],
-[class~="bg-[#04090b]"] {
-  background-color: var(--cia-surface-0) !important;
-}
-
-[class~="bg-[#0a1018]"] {
-  background-color: var(--cia-surface-2) !important;
-}
+/* Section shells and the map canvas keep their original ground: only the cards
+   and rails that sit on top of them take the new surface. The page background is
+   deliberately left exactly as it was. */
 
 [class~="bg-black/60"],
 [class~="bg-black/70"],
