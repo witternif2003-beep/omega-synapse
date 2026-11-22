@@ -22,6 +22,10 @@ import { publishAnomalyBeacon } from '../lib/anomalyBeacon.ts';
 import { InstitutionDossier, PersonDossier } from './OsintDeepDive.tsx';
 import { FeedRow } from './EspionageFeedRow.tsx';
 import { IndividualsPanel, CoveragePanel } from './EspionagePanels.tsx';
+import { CrimeQueuePanel } from './CrimeQueue.tsx';
+import { detectAllInstitutionCrimes } from '../lib/crimeInstitutionsB.ts';
+import { detectRecordCrimes } from '../lib/crimeRecords.ts';
+import { loadFinancials, type GaFinancialPayload } from '../lib/osintFinancials.ts';
 import type { SourceFilter } from './EspionagePanels.tsx';
 import {
   KIND_LABEL,
@@ -41,12 +45,11 @@ import {
  * release, or an OFAC action. The feed is fetched from the server, which fetched it from
  * those publishers; nothing is seeded in the browser.
  *
- * Opening a row shows the detail page for that record and the button that opens the
- * 280-measure administrative dossier for the charter it names: fourteen families of twenty
- * measures, the FDIC quarterly series, every reported Form 4 line and the transfer-pattern
- * screens. A person's dossier opens from the individuals panel. Those families and screens
- * are labelled derivations because the FBI has not published such a list, and no wire or
- * account record is published for these banks.
+ * The crime queue above the stream runs ten institution screens over the FDIC call-report
+ * figures for every Georgia charter and six record screens over the publishers' own text,
+ * each carrying its dollar figure, its formula and the threshold it crossed. Opening a row
+ * shows the detail page for that record and the button that opens the 280-measure
+ * administrative dossier for the charter it names.
  *
  * No account number, login, credential, MAC address or IP address appears anywhere: no
  * public record publishes one for these banks or people, and inventing one would be
@@ -74,6 +77,7 @@ export default function EspionageOperations() {
   const [query, setQuery] = useState('');
   const [attributedOnly, setAttributedOnly] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [financials, setFinancials] = useState<GaFinancialPayload | null>(null);
   const [lastRefresh, setLastRefresh] = useState<number>(Date.now());
   const [dossier, setDossier] = useState<
     | { kind: 'institution'; inst: GeorgiaInstitution }
@@ -96,6 +100,21 @@ export default function EspionageOperations() {
     const timer = window.setInterval(refresh, 60_000);
     return () => window.clearInterval(timer);
   }, [refresh]);
+
+  // The FDIC quarterly payload drives the institution screens; it changes once a quarter.
+  useEffect(() => {
+    let cancelled = false;
+    loadFinancials()
+      .then((payload) => {
+        if (!cancelled) setFinancials(payload);
+      })
+      .catch(() => {
+        if (!cancelled) setFinancials(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // A row that arrived in the last half hour raises a two-minute map beacon.
   useEffect(() => {
@@ -164,6 +183,14 @@ export default function EspionageOperations() {
     return ANOMALY_CLASSES.map((family) => ({ ...family, count: counts.get(family.key) ?? 0 }));
   }, [ranked]);
 
+  const crimeIncidents = useMemo(() => {
+    const records = feed ? detectRecordCrimes(feed.items) : [];
+    if (!financials || !feed) return records;
+    const names = new Map<string, { name: string; cert: string }>();
+    for (const inst of feed.institutions) names.set(inst.cert, { name: inst.name, cert: inst.cert });
+    return [...records, ...detectAllInstitutionCrimes(financials, names)];
+  }, [feed, financials]);
+
   const attributed = feed?.items.filter((item) => item.institutions.length).length ?? 0;
   const sourcesOnline = feed?.sources.filter((source) => source.ok).length ?? 0;
   const institutionsNamed = useMemo(() => {
@@ -230,7 +257,7 @@ export default function EspionageOperations() {
               {feed?.coverage.institutions ?? 0} GA INSTITUTIONS · {feed?.coverage.georgiaFilers ?? 0} GA FILERS
             </span>
             <span className="px-2 py-0.5 border border-cyan-500/40 bg-cyan-950/40 text-cyan-200 text-[10px] rounded">
-              ADMIN MODE · 280 INDICATORS PER ENTITY
+              ADMIN MODE · 280 INDICATORS PER ENTITY · CRIME QUEUE
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-3 text-[10px] text-zinc-400">
@@ -268,11 +295,12 @@ export default function EspionageOperations() {
             <strong className="text-emerald-300">Every row links to its publisher.</strong> The stream reads SEC
             EDGAR filings, the Federal Register, Federal Reserve and Department of Justice releases, FDIC press
             releases and OFAC actions, and refreshes every minute; the server refreshes the institution list from
-            the FDIC and the insider filings from EDGAR weekly. A row is attributed to a bank only when the
-            publisher’s own text names it. Opening a bank or a person shows the administrative dossier: two hundred
-            and eighty measures in fourteen families, the FDIC quarterly series, every reported Form 4 line and the
-            transfer-pattern screens. Those families and screens are labelled derivations because the FBI has not
-            published such a list, no wire or account record is published for these banks, and no account number,
+            the FDIC and the insider filings from EDGAR weekly. The crime queue screens the FDIC call-report figures
+            for every Georgia charter and the publishers' own text, and every incident prints its dollar basis, its
+            formula and the threshold it crossed. Opening a bank or a person shows the administrative dossier: two
+            hundred and eighty measures in fourteen families, the FDIC quarterly series, every reported Form 4 line
+            and the transfer-pattern screens. Those families and screens are labelled derivations because the FBI has
+            not published such a list, no wire or account record is published for these banks, and no account number,
             login, credential, MAC address or IP address is shown or invented.
           </p>
         </div>
@@ -321,6 +349,13 @@ export default function EspionageOperations() {
             </div>
           ))}
         </div>
+
+        <CrimeQueuePanel
+          incidents={crimeIncidents}
+          scope={`${feed?.institutions.length ?? 0} Georgia charters · ${financials?.quarter ?? 'FDIC quarters loading'} · every published record in the stream`}
+          note="Institution screens read the FDIC call report (noncurrent loans, allowance, past-due buckets, equity, income, brokered funding, asset growth); record screens read the publisher's own headline and text. Each row names the publisher link so the record can be checked at source."
+          refreshing={state === 'loading'}
+        />
 
         {dossier?.kind === 'institution' && (
           <InstitutionDossier
