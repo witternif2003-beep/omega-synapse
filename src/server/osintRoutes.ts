@@ -8,9 +8,11 @@
  *   GET /api/osint/feed              aggregated published records, cached for a minute
  *   GET /api/osint/insiders?cik=...  live SEC Form 4 filings for one Georgia bank company
  *   GET /api/osint/filing?...        one EDGAR filing document, parsed for the detail page
+ *   GET /api/osint/financials        FDIC quarterly financials for every Georgia charter
  */
 
 import type { Express, Request, Response } from 'express';
+import { fetchGeorgiaFinancials } from './fdicFinancials.ts';
 import {
   buildOsintFeed,
   fetchFilingDetail,
@@ -47,6 +49,12 @@ export function installOsintRoutes(app: Express): void {
     const payload = await fetchInsiders(cik);
     res.setHeader('Cache-Control', 'public, s-maxage=604800, stale-while-revalidate=86400');
     res.json(payload);
+  });
+
+  app.get('/api/osint/financials', async (_req: Request, res: Response) => {
+    const payload = await fetchGeorgiaFinancials();
+    res.setHeader('Cache-Control', 'public, s-maxage=43200, stale-while-revalidate=86400');
+    res.status(payload.ok ? 200 : 502).json(payload);
   });
 
   app.get('/api/osint/filing', async (req: Request, res: Response) => {
