@@ -1,369 +1,35 @@
+import {
+  type OsintKind,
+  type OsintSeverity,
+  type OsintItem,
+  type OsintSourceReport,
+  type OsintFeed,
+  getText,
+  tag,
+  attr,
+  toIso,
+  hash,
+  georgiaInstitutions,
+  type Matcher,
+  buildMatchers,
+  attribute,
+  type FilerFiling,
+  mapLimit,
+  filingsForFiler,
+  secItem,
+  decode,
+} from './osintSources.ts';
+import { GA_BANK_FILERS, type GaBankFiler } from '../data/gaBankFilers.ts';
+
 /**
- * LIVE OSINT FEED - REAL EXTERNAL SOURCES ONLY
+ * LIVE OSINT FEED - BUILDER, PUBLISHER PARSERS AND INSIDER FILINGS
  *
- * This module is the server half of the espionage tab. It fetches published records from
- * external publishers, normalises them, and matches them to Georgia financial institutions.
- * It never invents an event: if a publisher cannot be reached the source is reported as
- * unreachable and contributes nothing.
- *
- * Sources, all read without an API key:
- *   SEC EDGAR filings for the 27 Georgia bank companies (Form 4, 8-K, 10-Q, 10-K)
- *   Federal Register API - FDIC, Federal Reserve System, OCC, FinCEN
- *   Federal Reserve Board press releases (RSS)
- *   U.S. Department of Justice news (RSS)
- *   FDIC press releases (HTML)
- *   OFAC recent actions (HTML)
- *   FDIC BankFind institutions API - the Georgia institution universe
- *
- * Attribution is a name match: an item names an institution only when the institution's
- * published name, or the holding company name the FDIC reports for it, appears in the
- * publisher's own text. Items that name no institution are kept only when they are a
- * bank-regulator or sanctions publication, and are marked sector-wide.
+ * Reads SEC EDGAR, the Federal Register, Federal Reserve and Department of Justice RSS
+ * releases, FDIC press releases and OFAC actions, then parses each requested Form 4
+ * document into individual transaction lines. Nothing is synthesised: a publisher that
+ * cannot be reached contributes nothing and is reported unreachable.
  */
 
-import {
-  FDIC_GEORGIA_SNAPSHOT,
-  FDIC_SNAPSHOT_SOURCE,
-  type FdicInstitutionRow,
-} from '../data/fdicGeorgiaInstitutions.ts';
-import { GA_BANK_FILERS, FILER_BY_CIK, type GaBankFiler } from '../data/gaBankFilers.ts';
-
-const USER_AGENT = 'OmegaProtocolDashboard/1.0 (research; contact omega@example.org)';
-
-export type OsintKind =
-  | 'insider'
-  | 'filing'
-  | 'regulatory'
-  | 'enforcement'
-  | 'sanctions'
-  | 'litigation'
-  | 'press';
-
-export type OsintSeverity = 'critical' | 'high' | 'medium' | 'info';
-
-export interface OsintItem {
-  id: string;
-  sourceId: string;
-  publisher: string;
-  kind: OsintKind;
-  title: string;
-  summary: string;
-  url: string;
-  published: string;
-  severity: OsintSeverity;
-  /** Published institution names this item names, up to three. */
-  institutions: string[];
-  /** People named by the publisher in the item itself. */
-  people: string[];
-  /** True when the publication is a regulator/sanctions action that is not bank-specific. */
-  sector: boolean;
-  /** SEC company CIK when the item comes from an EDGAR filing. */
-  cik?: string;
-  /** EDGAR accession number when the item comes from a filing. */
-  accession?: string;
-  /** EDGAR primary document for the filing. */
-  document?: string;
-}
-
-export interface OsintSourceReport {
-  id: string;
-  label: string;
-  url: string;
-  ok: boolean;
-  count: number;
-  error?: string;
-}
-
-export interface OsintFeed {
-  generatedAt: string;
-  coverage: {
-    institutions: number;
-    source: string;
-    retrieved: string;
-    filers: number;
-    georgiaFilers: number;
-  };
-  sources: OsintSourceReport[];
-  items: OsintItem[];
-  institutions: GeorgiaInstitution[];
-}
-
-/* -------------------------------------------------------------------------- */
-/* http                                                                        */
-/* -------------------------------------------------------------------------- */
-
-async function getText(url: string, timeoutMs = 12_000): Promise<string> {
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent': USER_AGENT,
-      Accept: 'application/atom+xml, application/rss+xml, application/xml, text/xml, application/json, text/html;q=0.8',
-    },
-    signal: AbortSignal.timeout(timeoutMs),
-  });
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return response.text();
-}
-
-const decode = (value: string): string =>
-  value
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#0?39;|&apos;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&#(\d+);/g, (_, code: string) => String.fromCharCode(Number(code)))
-    .replace(/&amp;/g, '&')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-const tag = (name: string, block: string): string => {
-  const match = block.match(new RegExp(`<${name}[^>]*>([\\s\\S]*?)</${name}>`, 'i'));
-  return match ? decode(match[1]) : '';
-};
-
-const attr = (name: string, block: string): string => {
-  const match = block.match(new RegExp(`${name}="([^"]*)"`, 'i'));
-  return match ? decode(match[1]) : '';
-};
-
-const toIso = (value: string): string => {
-  const time = Date.parse(value);
-  return Number.isFinite(time) ? new Date(time).toISOString() : '';
-};
-
-const hash = (value: string): string => {
-  let h = 2166136261;
-  for (let i = 0; i < value.length; i += 1) {
-    h ^= value.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return (h >>> 0).toString(36);
-};
-
-/* -------------------------------------------------------------------------- */
-/* institution universe                                                        */
-/* -------------------------------------------------------------------------- */
-
-export interface GeorgiaInstitution {
-  name: string;
-  city: string;
-  cert: string;
-  holdingCompany: string;
-  assetsThousands: number;
-}
-
-const norm = (value: string): string =>
-  value
-    .toUpperCase()
-    .replace(/[.,'’]/g, ' ')
-    .replace(/\b(NATIONAL ASSOCIATION|N A|NA|INCORPORATED|INC|CORPORATION|CORP|COMPANY|CO|THE|F S B|FSB|S S B|SSB|L P|LP|LTD)\b/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-let institutionCache: { at: number; rows: GeorgiaInstitution[]; source: string; retrieved: string } | null = null;
-
-function snapshotInstitutions(): GeorgiaInstitution[] {
-  return FDIC_GEORGIA_SNAPSHOT.map((row: FdicInstitutionRow) => ({
-    name: row[0],
-    city: row[1],
-    cert: row[2],
-    holdingCompany: row[3],
-    assetsThousands: row[4],
-  }));
-}
-
-export async function georgiaInstitutions(): Promise<{
-  rows: GeorgiaInstitution[];
-  source: string;
-  retrieved: string;
-}> {
-  const now = Date.now();
-  if (institutionCache && now - institutionCache.at < 6 * 3_600_000) {
-    return institutionCache;
-  }
-  const snapshot = {
-    rows: snapshotInstitutions(),
-    source: `${FDIC_SNAPSHOT_SOURCE.dataset} snapshot (${FDIC_SNAPSHOT_SOURCE.filters})`,
-    retrieved: FDIC_SNAPSHOT_SOURCE.retrieved,
-  };
-  try {
-    const url =
-      'https://api.fdic.gov/banks/institutions?filters=STALP:GA%20AND%20ACTIVE:1' +
-      '&fields=NAME,CITY,CERT,NAMEHCR,ASSET&limit=1000&format=json';
-    const body = JSON.parse(await getText(url, 14_000)) as {
-      data?: Array<{ data?: Record<string, unknown> }>;
-    };
-    const rows: GeorgiaInstitution[] = (body.data ?? [])
-      .map((entry) => entry.data ?? {})
-      .map((row) => ({
-        name: String(row.NAME ?? '').trim(),
-        city: String(row.CITY ?? '').trim(),
-        cert: String(row.CERT ?? '').trim(),
-        holdingCompany: String(row.NAMEHCR ?? '').trim(),
-        assetsThousands: Number(row.ASSET ?? 0),
-      }))
-      .filter((row) => row.name);
-    if (rows.length < 20) throw new Error(`only ${rows.length} institutions returned`);
-    const live = {
-      rows,
-      source: 'FDIC BankFind institutions API (STALP:GA AND ACTIVE:1)',
-      retrieved: new Date().toISOString().slice(0, 10),
-    };
-    institutionCache = { at: now, ...live };
-    return live;
-  } catch {
-    institutionCache = { at: now - 5.5 * 3_600_000, ...snapshot };
-    return snapshot;
-  }
-}
-
-/* -------------------------------------------------------------------------- */
-/* attribution                                                                 */
-/* -------------------------------------------------------------------------- */
-
-interface Matcher {
-  phrase: string;
-  name: string;
-  bank: string;
-}
-
-function buildMatchers(rows: GeorgiaInstitution[]): Matcher[] {
-  const seen = new Set<string>();
-  const matchers: Matcher[] = [];
-  const push = (value: string, name: string, bank: string) => {
-    const phrase = norm(value);
-    if (phrase.length < 5) return;
-    const key = `${phrase}:${name}`;
-    if (seen.has(key)) return;
-    seen.add(key);
-    matchers.push({ phrase: ` ${phrase} `, name, bank });
-  };
-  for (const row of rows) {
-    push(row.name, row.name, row.name);
-    if (row.holdingCompany) push(row.holdingCompany, row.name, row.name);
-  }
-  for (const filer of GA_BANK_FILERS) {
-    push(filer.name, filer.bank || filer.name, filer.bank);
-    if (filer.bank) push(filer.bank, filer.bank, filer.bank);
-    if (filer.holdingCompany) push(filer.holdingCompany, filer.bank || filer.name, filer.bank);
-  }
-  return matchers.sort((a, b) => b.phrase.length - a.phrase.length);
-}
-
-function attribute(text: string, matchers: Matcher[], limit = 3): string[] {
-  const haystack = ` ${norm(text)} `;
-  const hits: string[] = [];
-  for (const matcher of matchers) {
-    if (haystack.includes(matcher.phrase) && !hits.includes(matcher.bank)) {
-      hits.push(matcher.bank || matcher.name);
-      if (hits.length >= limit) break;
-    }
-  }
-  return hits;
-}
-
-/* -------------------------------------------------------------------------- */
-/* SEC EDGAR                                                                   */
-/* -------------------------------------------------------------------------- */
-
-interface FilerFiling {
-  filer: GaBankFiler;
-  form: string;
-  accession: string;
-  document: string;
-  filed: string;
-  url: string;
-}
-
-async function mapLimit<T, R>(input: T[], limit: number, run: (value: T) => Promise<R>): Promise<R[]> {
-  const out: R[] = new Array(input.length);
-  let cursor = 0;
-  const workers = Array.from({ length: Math.min(Math.max(1, limit), input.length) }, async () => {
-    while (cursor < input.length) {
-      const index = cursor;
-      cursor += 1;
-      out[index] = await run(input[index]);
-    }
-  });
-  await Promise.all(workers);
-  return out;
-}
-
-/** Form 4 and periodic filings from the last SEC_WINDOW_DAYS for one Georgia bank company. */
-const SEC_WINDOW_DAYS = 45;
-
-async function filingsForFiler(filer: GaBankFiler): Promise<FilerFiling[]> {
-  const padded = filer.cik.padStart(10, '0');
-  const body = JSON.parse(
-    await getText(`https://data.sec.gov/submissions/CIK${padded}.json`, 12_000),
-  ) as {
-    filings?: {
-      recent?: {
-        form?: string[];
-        accessionNumber?: string[];
-        filingDate?: string[];
-        primaryDocument?: string[];
-      };
-    };
-  };
-  const recent = body.filings?.recent ?? {};
-  const forms = recent.form ?? [];
-  const accessions = recent.accessionNumber ?? [];
-  const dates = recent.filingDate ?? [];
-  const docs = recent.primaryDocument ?? [];
-  const cutoff = Date.now() - SEC_WINDOW_DAYS * 86_400_000;
-  const out: FilerFiling[] = [];
-  for (let i = 0; i < forms.length && out.length < 8; i += 1) {
-    const form = forms[i] ?? '';
-    if (!/^(4|8-K|10-Q|10-K)$/.test(form)) continue;
-    const filed = dates[i] ?? '';
-    if (!filed || Date.parse(`${filed}T00:00:00Z`) < cutoff) continue;
-    const accession = accessions[i] ?? '';
-    if (!accession) continue;
-    out.push({
-      filer,
-      form,
-      accession,
-      document: docs[i] ?? '',
-      filed,
-      url: `https://www.sec.gov/Archives/edgar/data/${Number(filer.cik)}/${accession.replace(/-/g, '')}/`,
-    });
-  }
-  return out;
-}
-
-function secItem(filing: FilerFiling): OsintItem {
-  const { filer, form } = filing;
-  const isForm4 = form === '4';
-  const bank = filer.bank || filer.name;
-  return {
-    id: `sec-${hash(`${form}:${filing.accession}`)}`,
-    sourceId: isForm4 ? 'sec-form4' : 'sec-8k',
-    publisher: 'U.S. Securities and Exchange Commission, EDGAR',
-    kind: isForm4 ? 'insider' : 'filing',
-    title: isForm4
-      ? `Form 4 insider filing — ${filer.name}${filer.ticker ? ` (${filer.ticker})` : ''}`
-      : `${filer.name}${filer.ticker ? ` (${filer.ticker})` : ''} filed Form ${form}`,
-    summary:
-      `${filer.name}${filer.city ? `, ${filer.city}` : ''}${
-        filer.scope === 'GEORGIA' ? ' is a Georgia-domiciled bank holding company' : ' operates Georgia branches'
-      }. Its bank ${bank} appears in the FDIC Georgia institution list. Filed ${filing.filed}; ` +
-      'open the EDGAR record to read the filing itself. The reporting person is shown from the filing document.',
-    url: filing.url,
-    published: `${filing.filed}T12:00:00.000Z`,
-    severity: isForm4 ? 'medium' : 'high',
-    institutions: [bank],
-    people: [],
-    sector: false,
-    cik: filer.cik,
-    accession: filing.accession,
-    document: filing.document,
-  };
-}
-
-/** One SEC filing document, parsed on demand for the detail page. */
 export async function fetchFilingDetail(
   cik: string,
   accession: string,
@@ -374,21 +40,17 @@ export async function fetchFilingDetail(
   const url = `https://www.sec.gov/Archives/edgar/data/${Number(cik)}/${clean}/${name}`;
   try {
     const xml = await getText(url, 12_000);
-    const filing = parseForm4(xml, url, accession);
+    const filing = parseForm4(xml, url, accession)?.row ?? null;
     return { ok: Boolean(filing), url, filing };
   } catch (error) {
     return {
       ok: false,
       url,
       filing: null,
-      error: error instanceof Error ? error.message : 'filing document unavailable',
+      error: error instanceof Error ? error.message : 'filing not readable',
     };
   }
 }
-
-/* -------------------------------------------------------------------------- */
-/* Federal Register                                                            */
-/* -------------------------------------------------------------------------- */
 
 const FR_AGENCIES: Array<{ id: string; label: string; agency: string }> = [
   { id: 'fr-fdic', label: 'Federal Register — FDIC', agency: 'federal-deposit-insurance-corporation' },
@@ -415,10 +77,6 @@ async function fetchFederalRegister(agency: string): Promise<FrDoc[]> {
   return body.results ?? [];
 }
 
-/* -------------------------------------------------------------------------- */
-/* RSS                                                                         */
-/* -------------------------------------------------------------------------- */
-
 interface RssItem {
   title: string;
   url: string;
@@ -444,9 +102,13 @@ function parseRss(xml: string): RssItem[] {
   return out;
 }
 
-/* -------------------------------------------------------------------------- */
-/* HTML listings                                                               */
-/* -------------------------------------------------------------------------- */
+async function fetchRss(url: string): Promise<RssItem[]> {
+  try {
+    return parseRss(await getText(url, 12_000));
+  } catch {
+    return [];
+  }
+}
 
 const MONTHS: Record<string, string> = {
   january: '01', february: '02', march: '03', april: '04', may: '05', june: '06',
@@ -477,7 +139,12 @@ function parseFdicPress(html: string): RssItem[] {
     if (!title) continue;
     seen.add(url);
     const date = /<time[^>]*datetime="([^"]+)"/i.exec(block)?.[1] ?? '';
-    out.push({ title, url, published: date ? `${date}T12:00:00.000Z` : '', description: '' });
+    out.push({
+      title,
+      url,
+      published: date ? `${date}T12:00:00.000Z` : '',
+      description: '',
+    });
   }
   return out;
 }
@@ -500,10 +167,6 @@ function parseOfac(html: string): RssItem[] {
   }
   return out;
 }
-
-/* -------------------------------------------------------------------------- */
-/* source assembly                                                             */
-/* -------------------------------------------------------------------------- */
 
 const GEORGIA_WORDS = /georgia|atlanta|savannah|augusta|macon|columbus|albany|athens|n\.d\. ga|m\.d\. ga|s\.d\. ga|northern district of georgia|middle district of georgia|southern district of georgia/i;
 
@@ -555,15 +218,14 @@ export async function buildOsintFeed(): Promise<OsintFeed> {
   const sources: OsintSourceReport[] = [];
   const items: OsintItem[] = [];
 
-  /* SEC filings - every Georgia bank company, last 45 days */
   const allFilings = filerFilings.flat();
   const form4Items = allFilings.filter((filing) => filing.form === '4').map(secItem);
   const otherItems = allFilings.filter((filing) => filing.form !== '4').map(secItem);
   items.push(...form4Items, ...otherItems);
-  const filersReached = filerFilings.filter((rows) => rows.length >= 0).length;
+  const filersReached = filerFilings.filter((rows) => rows.length > 0).length;
   sources.push({
     id: 'sec-form4',
-    label: 'SEC EDGAR Form 4 insider filings (27 Georgia bank companies)',
+    label: 'SEC EDGAR Form 4 insider filings (Georgia bank companies)',
     url: 'https://www.sec.gov/edgar/search/',
     ok: filersReached > 0,
     count: form4Items.length,
@@ -579,25 +241,26 @@ export async function buildOsintFeed(): Promise<OsintFeed> {
   });
 
   for (const { source, docs } of frDocs) {
-    const built = docs.slice(0, 6).map((doc) =>
-      baseItem(
+    const built = docs.slice(0, 6).map((doc) => {
+      const raw: RssItem = {
+        title: doc.title ?? '',
+        url: doc.html_url ?? '',
+        published: doc.publication_date ? `${doc.publication_date}T12:00:00.000Z` : '',
+        description: doc.abstract ?? '',
+      };
+      return baseItem(
         source.id,
         'Federal Register',
         doc.type === 'Rule' || doc.type === 'Proposed Rule' ? 'regulatory' : 'enforcement',
         doc.type === 'Rule' || doc.type === 'Proposed Rule' ? 'medium' : 'high',
-        {
-          title: doc.title ?? '',
-          url: doc.html_url ?? '',
-          published: doc.publication_date ? `${doc.publication_date}T12:00:00.000Z` : '',
-          description: doc.abstract ?? '',
-        },
+        raw,
         matchers,
         `${doc.type ?? 'Document'} published by ${(doc.agencies ?? [])
           .map((agency) => agency.name)
           .filter(Boolean)
           .join(', ') || 'a federal financial regulator'}.`,
-      ),
-    );
+      );
+    });
     items.push(...built);
     sources.push({
       id: source.id,
@@ -716,18 +379,6 @@ export async function buildOsintFeed(): Promise<OsintFeed> {
   };
 }
 
-async function fetchRss(url: string): Promise<RssItem[]> {
-  try {
-    return parseRss(await getText(url, 12_000));
-  } catch {
-    return [];
-  }
-}
-
-/* -------------------------------------------------------------------------- */
-/* insiders - live Form 4 filings for one Georgia bank company                 */
-/* -------------------------------------------------------------------------- */
-
 export interface OsintFilingRow {
   id: string;
   owner: string;
@@ -740,6 +391,26 @@ export interface OsintFilingRow {
   price: number;
   after: number;
   ownership: string;
+  url: string;
+}
+
+/** One reported line item from a Form 4 document. */
+export interface OsintTransaction {
+  accession: string;
+  owner: string;
+  roleBits: number;
+  title: string;
+  filed: string;
+  traded: string;
+  code: string;
+  shares: number;
+  price: number;
+  after: number;
+  ownership: string;
+  nature: string;
+  security: string;
+  derivative: boolean;
+  tenb5one: boolean;
   url: string;
 }
 
@@ -758,6 +429,8 @@ export interface OsintInsiderResponse {
   cacheSeconds: number;
   error?: string;
   filings: OsintFilingRow[];
+  /** Every reported transaction line, not only the first line of each filing. */
+  transactions: OsintTransaction[];
   people: number;
 }
 
@@ -781,8 +454,17 @@ function numberOf(value: string): number {
   return Number.isFinite(parsed) ? parsed : -1;
 }
 
-function parseForm4(xml: string, url: string, accession: string): OsintFilingRow | null {
-  const owner = tag('rptOwnerName', xml);
+function pickDate(rows: OsintFilingRow[], accession: string): string {
+  const row = rows.find((entry) => entry.id === accession);
+  return row ? row.filed : '';
+}
+
+function parseForm4(
+  xml: string,
+  url: string,
+  accession: string,
+): { row: OsintFilingRow; transactions: OsintTransaction[] } | null {
+  const owner = tag('rptOwnerName', xml).replace(/\s+/g, ' ').trim();
   if (!owner) return null;
   const relationship = firstBlock('reportingOwnerRelationship', xml);
   const roleBits =
@@ -793,24 +475,64 @@ function parseForm4(xml: string, url: string, accession: string): OsintFilingRow
   const title = tag('officerTitle', relationship) || tag('otherText', relationship);
   const transaction =
     firstBlock('nonDerivativeTransaction', xml) || firstBlock('derivativeTransaction', xml);
+  const filed = tag('periodOfReport', xml);
+  const tenb5one = /<aff10b5One>\s*(?:1|true)\s*<\/aff10b5One>/i.test(xml);
+
+  const blocks: Array<{ block: string; derivative: boolean }> = [];
+  for (const match of xml.matchAll(/<nonDerivativeTransaction[^>]*>([\s\S]*?)<\/nonDerivativeTransaction>/gi)) {
+    blocks.push({ block: match[1], derivative: false });
+  }
+  for (const match of xml.matchAll(/<derivativeTransaction[^>]*>([\s\S]*?)<\/derivativeTransaction>/gi)) {
+    blocks.push({ block: match[1], derivative: true });
+  }
+
+  const transactions: OsintTransaction[] = blocks
+    .map(({ block, derivative }) => {
+      // Form 4 nests each field differently (transactionDate and transactionCoding sit beside
+      // transactionAmounts, ownershipNature wraps its own values), so every field is read
+      // recursively from the transaction block rather than from a guessed wrapper.
+      return {
+        accession,
+        owner,
+        roleBits: roleBits || 0,
+        title,
+        filed: filed.slice(0, 10),
+        traded: valueOf(block, 'transactionDate'),
+        code: tag('transactionCode', block),
+        shares: numberOf(valueOf(block, 'transactionShares')),
+        price: numberOf(valueOf(block, 'transactionPricePerShare')),
+        after: numberOf(valueOf(block, 'sharesOwnedFollowingTransaction')),
+        ownership: valueOf(block, 'directOrIndirectOwnership') || 'D',
+        nature: valueOf(block, 'natureOfOwnership'),
+        security: tag('securityTitle', block),
+        derivative,
+        tenb5one,
+        url,
+      };
+    })
+    .filter((item) => item.traded || item.code || item.shares >= 0);
+
   return {
-    id: accession,
-    owner: owner.replace(/\s+/g, ' ').trim(),
-    roleBits,
-    title,
-    filed: tag('periodOfReport', xml),
-    traded: valueOf(transaction, 'transactionDate'),
-    code: tag('transactionCode', transaction),
-    shares: numberOf(valueOf(transaction, 'transactionShares')),
-    price: numberOf(valueOf(transaction, 'transactionPricePerShare')),
-    after: numberOf(valueOf(transaction, 'sharesOwnedFollowingTransaction')),
-    ownership: valueOf(transaction, 'directOrIndirectOwnership') || 'D',
-    url,
+    row: {
+      id: accession,
+      owner,
+      roleBits: roleBits || 0,
+      title,
+      filed,
+      traded: valueOf(transaction, 'transactionDate'),
+      code: tag('transactionCode', transaction),
+      shares: numberOf(valueOf(transaction, 'transactionShares')),
+      price: numberOf(valueOf(transaction, 'transactionPricePerShare')),
+      after: numberOf(valueOf(transaction, 'sharesOwnedFollowingTransaction')),
+      ownership: valueOf(transaction, 'directOrIndirectOwnership') || 'D',
+      url,
+    },
+    transactions,
   };
 }
 
 export async function fetchInsiders(cik: string): Promise<OsintInsiderResponse> {
-  const filer = GA_BANK_FILERS.find((entry) => entry.cik === cik) ?? GA_BANK_FILERS[0];
+  const filer: GaBankFiler = GA_BANK_FILERS.find((entry) => entry.cik === cik) ?? GA_BANK_FILERS[0];
   const cached = insiderCache.get(filer.cik);
   const base = {
     issuer: {
@@ -855,6 +577,7 @@ export async function fetchInsiders(cik: string): Promise<OsintInsiderResponse> 
     }
 
     const rows: OsintFilingRow[] = [];
+    const lines: OsintTransaction[] = [];
     const concurrency = 6;
     for (let i = 0; i < picks.length; i += concurrency) {
       const slice = picks.slice(i, i + concurrency);
@@ -866,9 +589,12 @@ export async function fetchInsiders(cik: string): Promise<OsintInsiderResponse> 
           )}/${pick.document}`;
           try {
             const xml = await getText(url, 12_000);
-            const row = parseForm4(xml, url, pick.accession);
-            if (row && !row.filed) row.filed = pick.filed;
-            if (row && row.filed) row.filed = row.filed.slice(0, 10);
+            const detail = parseForm4(xml, url, pick.accession);
+            if (!detail) return null;
+            const row = detail.row;
+            if (!row.filed) row.filed = pick.filed;
+            if (row.filed) row.filed = row.filed.slice(0, 10);
+            lines.push(...detail.transactions);
             return row;
           } catch {
             return null;
@@ -884,6 +610,9 @@ export async function fetchInsiders(cik: string): Promise<OsintInsiderResponse> 
       fetchedAt: new Date().toISOString(),
       error: rows.length ? undefined : 'EDGAR returned no parsable Form 4 filings for this company',
       filings: rows.sort((a, b) => b.filed.localeCompare(a.filed)),
+      transactions: lines
+        .map((line) => (line.filed ? line : { ...line, filed: pickDate(rows, line.accession) }))
+        .sort((a, b) => (b.traded || b.filed).localeCompare(a.traded || a.filed)),
       people: new Set(rows.map((row) => row.owner)).size,
     };
     insiderCache.set(filer.cik, { at: Date.now(), response });
@@ -895,6 +624,7 @@ export async function fetchInsiders(cik: string): Promise<OsintInsiderResponse> 
       fetchedAt: new Date().toISOString(),
       error: error instanceof Error ? error.message : 'EDGAR request failed',
       filings: [],
+      transactions: [],
       people: 0,
     };
     insiderCache.set(filer.cik, { at: Date.now() - INSIDER_TTL_MS + 120_000, response });
