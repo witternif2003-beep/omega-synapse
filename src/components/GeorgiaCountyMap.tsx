@@ -32,6 +32,9 @@ import {
 
 const SNAPSHOT_ID = 'fiscal-2025-sod';
 
+/** Lowest value on the incident scale: still visibly a county, never background. */
+const ZERO_INCIDENT_FILL = '#12332a';
+
 type MapMode = 'INCIDENTS' | 'SCORE';
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -46,10 +49,10 @@ function countyKey(raw: string): string {
 }
 
 function incidentColor(count: number, max: number): string {
-  if (count <= 0) return '#0b1a17';
+  if (count <= 0) return ZERO_INCIDENT_FILL;
   const t = Math.min(1, count / Math.max(1, max));
   const stops: Array<[number, [number, number, number]]> = [
-    [0, [16, 84, 66]],
+    [0, [22, 74, 58]],
     [0.45, [245, 158, 11]],
     [1, [244, 63, 94]],
   ];
@@ -163,7 +166,7 @@ export default function GeorgiaCountyMap() {
       return incidentColor(incidentsByCounty.get(name)?.length ?? 0, maxIncidents);
     }
     const assessment = assessmentByFips.get(fips);
-    return assessment ? RISK_BAND_COLORS[assessment.band] : '#0b1a17';
+    return assessment ? RISK_BAND_COLORS[assessment.band] : ZERO_INCIDENT_FILL;
   };
 
   return (
@@ -250,9 +253,9 @@ export default function GeorgiaCountyMap() {
                       key={shape.fips}
                       d={shape.path}
                       fill={countyFill(shape.name, shape.fips)}
-                      fillOpacity={mode === 'INCIDENTS' ? (incidents > 0 ? 0.85 : 0.5) : 0.72}
-                      stroke={isActive ? '#eafff5' : 'rgba(4, 9, 11, 0.85)'}
-                      strokeWidth={isActive ? 2.4 : 0.8}
+                      fillOpacity={0.92}
+                      stroke={isActive ? '#eafff5' : 'rgba(3, 8, 10, 0.95)'}
+                      strokeWidth={isActive ? 2.4 : 0.9}
                       className="cursor-pointer"
                       onClick={() => setSelectedFips(isActive ? null : shape.fips)}
                     >
