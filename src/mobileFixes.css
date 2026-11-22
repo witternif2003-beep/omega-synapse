@@ -81,6 +81,18 @@
     padding-bottom: 0.3rem;
   }
 
+  /* --- 4. Espionage cards: room to separate one target from the next ------ */
+  /* :has(> :nth-child(9)) picks the target grid only - the summary strip above
+     it holds four tiles and keeps the tighter gap. */
+  #espionage-layer .glass > div.grid:has(> :nth-child(9)) {
+    gap: 0.8rem !important;
+    row-gap: 0.9rem !important;
+  }
+
+  #espionage-layer .glass > div.grid:has(> :nth-child(9)) > * {
+    border-radius: 6px;
+  }
+
   /* --- 3. Build tag above the browser toolbar ------------------------------- */
   .build-stamp {
     bottom: calc(env(safe-area-inset-bottom, 0px) + 70px) !important;

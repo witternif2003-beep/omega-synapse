@@ -7,6 +7,7 @@ import BuildStamp from './components/BuildStamp.tsx';
 import { installScrollStabilizer } from './lib/scrollStabilizer.ts';
 import { installEspionageTabStrobe } from './lib/espionageTabStrobe.ts';
 import { installEspionagePager } from './lib/espionagePager.ts';
+import { installBuildFreshness } from './lib/buildFreshness.ts';
 import './index.css';
 import './espionagePinned.css';
 import './ciaPanels.css';
@@ -30,3 +31,6 @@ installEspionageTabStrobe();
 
 // Page the 170-target espionage list instead of rendering one 91,000px column.
 installEspionagePager(20);
+
+// Notice when this page is running an older deployment than the one that is live.
+installBuildFreshness(__BUILD_ID__);
