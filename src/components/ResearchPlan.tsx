@@ -74,6 +74,34 @@ export default function ResearchPlan() {
           ))}
         </div>
 
+        {/* Revision note: what this build actually carries. Every figure below is computed
+            from the data in the repository, so the plan is reviewed against the real state
+            rather than restated. */}
+        <div className="border border-zinc-800 rounded bg-[#070f12] p-3 space-y-2">
+          <div className="text-[9px] uppercase tracking-widest text-zinc-500">
+            Plan revision · what this build carries
+          </div>
+          <ul className="text-[10.5px] text-zinc-300 leading-relaxed list-disc pl-4 space-y-1">
+            <li>
+              {scopedCounties} county boundaries drawn from U.S. Census geometry, each named on
+              the map and openable for its own record.
+            </li>
+            <li>
+              {COUNTY_BANK_SOURCE.countyBankRows} county-institution rows across{' '}
+              {COUNTY_BANK_SOURCE.countiesWithBanks} counties, listed both in the county
+              drill-down and in the map detail panel.
+            </li>
+            <li>
+              {demoIncidents} demo incident records placed at the coordinates stored with each
+              record — labelled as demo throughout, never as observed activity.
+            </li>
+            <li>
+              Counters now report what is actually held: no fixed offsets and no minimum floors,
+              with the stored total taken from the server&apos;s own count.
+            </li>
+          </ul>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {POST_DOCTORATE_RESEARCH_PLAN.map((phase) => (
             <div key={phase.phase} className="border border-zinc-800 rounded bg-[#070f12] p-3 space-y-2">
