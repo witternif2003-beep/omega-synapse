@@ -365,6 +365,7 @@ export function CrimeIncidentList({
     [incidents],
   );
   const total = sorted.reduce((sum, incident) => sum + (incident.amountUsd ?? 0), 0);
+  const priced = sorted.filter((incident) => incident.amountUsd !== null).length;
 
   return (
     <div className="border border-amber-900/40 rounded bg-[#0a0c07]">
@@ -373,7 +374,8 @@ export function CrimeIncidentList({
           <AlertTriangle size={10} /> {title}
         </span>
         <span className="text-[9px] text-zinc-500">
-          {sorted.length} incident{sorted.length === 1 ? '' : 's'} · {usd(total)} at issue
+          {sorted.length} incident{sorted.length === 1 ? '' : 's'} ·{' '}
+          {priced > 0 ? `${usd(total)} at issue across ${priced} priced line(s)` : 'no published dollar figure on these lines'}
         </span>
       </div>
       {sorted.length === 0 ? (
