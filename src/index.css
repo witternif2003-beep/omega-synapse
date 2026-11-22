@@ -168,3 +168,94 @@ select:focus, input:focus {
   border-color: rgba(var(--accent), .8);
   box-shadow: 0 0 14px -5px rgba(var(--accent), .6);
 }
+
+/* ============================================================================
+   READABILITY LAYER
+   ----------------------------------------------------------------------------
+   This dashboard is a dense monospace UI drawn on top of a moving 3D scene. Two
+   things were working against legibility: the muted greys sat between 2.5:1 and
+   4:1 against the background, and the 9-11px type let the starfield shimmer
+   through it. Both are corrected here rather than by restyling every panel.
+   ========================================================================== */
+
+/* Muted text now clears WCAG AA (4.5:1) comfortably and most of it clears AAA (7:1).
+   Previous values on this background: zinc-500 3.95:1, zinc-600 2.47:1. */
+.text-zinc-500 { color: #c2c8d2 !important; }
+.text-zinc-600 { color: #a3abb8 !important; }
+.text-zinc-400 { color: #dcdfe4 !important; }
+.text-zinc-300 { color: #eef1f5 !important; }
+
+/* A size floor: nothing in the interface renders below 10.5px any more. */
+.text-\[9px\] { font-size: 10.5px !important; line-height: 1.45 !important; }
+.text-\[10px\] { font-size: 11.5px !important; line-height: 1.5 !important; }
+.text-\[11px\] { font-size: 12.5px !important; line-height: 1.55 !important; }
+.text-xs { font-size: 12.8px !important; line-height: 1.55 !important; }
+
+/* Panels get a real surface, so body copy is never read through the scene. */
+.glass:not(.modal-dialog) {
+  background: linear-gradient(180deg, rgba(6, 11, 16, 0.82), rgba(3, 7, 11, 0.88)) !important;
+  border-color: rgba(var(--accent), .5) !important;
+  box-shadow: 0 0 30px -12px rgba(var(--accent), .28), 0 1px 0 0 rgba(255, 255, 255, .04) inset;
+}
+
+/* The idle sheen sweeps across text; keep it as a faint trace. */
+.glass::before {
+  opacity: .3;
+}
+
+/* Hairline separators were nearly invisible; give them enough contrast to read. */
+.border-white\/10 { border-color: rgba(255, 255, 255, .2) !important; }
+.border-white\/15 { border-color: rgba(255, 255, 255, .26) !important; }
+
+/* ============================================================================
+   ESPIONAGE TAB - "JUST UPDATED" STROBE
+   ----------------------------------------------------------------------------
+   A strobing outline on the espionage view tab so a refreshed layer announces
+   itself. It strobes for the first 20 seconds after load, then settles into a
+   steady amber outline instead of pulsing forever.
+   ========================================================================== */
+@keyframes espionage-strobe {
+  0% {
+    border-color: rgba(0, 255, 136, .95);
+    box-shadow: 0 0 0 1px rgba(0, 255, 136, .85), 0 0 14px 1px rgba(0, 255, 136, .55);
+    color: #eafff4;
+  }
+  50% {
+    border-color: rgba(251, 191, 36, 1);
+    box-shadow: 0 0 0 1px rgba(251, 191, 36, .95), 0 0 24px 4px rgba(251, 191, 36, .65);
+    color: #fff7e6;
+  }
+  100% {
+    border-color: rgba(0, 255, 136, .95);
+    box-shadow: 0 0 0 1px rgba(0, 255, 136, .85), 0 0 14px 1px rgba(0, 255, 136, .55);
+    color: #eafff4;
+  }
+}
+
+@keyframes espionage-strobe-fill {
+  0%, 100% { background-color: rgba(0, 255, 136, .16); }
+  50% { background-color: rgba(251, 191, 36, .24); }
+}
+
+.espionage-tab-live {
+  position: relative;
+  border-width: 1px !important;
+  animation: espionage-strobe 1.7s ease-in-out infinite,
+             espionage-strobe-fill 1.7s ease-in-out infinite;
+}
+
+.espionage-tab-marked {
+  position: relative;
+  border-width: 1px !important;
+  border-color: rgba(251, 191, 36, .85) !important;
+  box-shadow: 0 0 0 1px rgba(251, 191, 36, .35), 0 0 12px -2px rgba(251, 191, 36, .5);
+  color: #fff7e6 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .espionage-tab-live {
+    animation: none;
+    border-color: rgba(251, 191, 36, .9) !important;
+    box-shadow: 0 0 0 1px rgba(251, 191, 36, .55);
+  }
+}
