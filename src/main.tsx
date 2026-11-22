@@ -2,6 +2,7 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import CountyForensicOverlay from './components/CountyForensicOverlay.tsx';
 import GeorgiaCountyMap from './components/GeorgiaCountyMap.tsx';
+import FinancialEspionage from './components/FinancialEspionage.tsx';
 import ResearchPlan from './components/ResearchPlan.tsx';
 import BuildStamp from './components/BuildStamp.tsx';
 import { installScrollStabilizer } from './lib/scrollStabilizer.ts';
@@ -19,6 +20,7 @@ createRoot(document.getElementById('root')!).render(
     <App />
     <CountyForensicOverlay />
     <GeorgiaCountyMap />
+    <FinancialEspionage />
     <ResearchPlan />
     <BuildStamp />
   </>
