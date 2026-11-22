@@ -84,6 +84,22 @@ const CLOCK_PATCHES: Array<[find: string, replace: string]> = [
   ],
 ];
 
+/**
+ * CLAIM COPY FIX
+ *
+ * Each tracked organisation prints "{n} claims · {m} sourced". When m is smaller than n the
+ * card reads like a discrepancy with no explanation, and one claim prints as "1 claims".
+ * It now says how many are still awaiting a source, and pluralises correctly, so a partially
+ * sourced dossier states its own status instead of looking like an error.
+ */
+const CLAIM_COPY_PATCHES: Array<[find: string, replace: string]> = [
+  [
+    '{p.claims.length} claims · {verifiedClaims} sourced',
+    "{p.claims.length === 1 ? '1 claim' : p.claims.length + ' claims'} · {verifiedClaims} sourced" +
+      "{verifiedClaims < p.claims.length ? ' · ' + (p.claims.length - verifiedClaims) + ' awaiting source' : ' · all sourced'}",
+  ],
+];
+
 function patchAppSource(name: string, patches: Array<[find: string, replace: string]>): Plugin {
   return {
     name,
@@ -156,6 +172,7 @@ export default defineConfig(() => {
     plugins: [
       patchAppSource('omega-fix-stale-counters', STALE_COUNTER_PATCHES),
       patchAppSource('omega-fix-clock', CLOCK_PATCHES),
+      patchAppSource('omega-fix-claim-copy', CLAIM_COPY_PATCHES),
       emitVersionFile(),
       react(),
       tailwindcss(),
