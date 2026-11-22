@@ -1,7 +1,10 @@
+/**
+ * FINANCIAL CRIME ANOMALY ENGINE — INSTITUTION SCREENS
  *
- *  - FDIC call-report figures for a Georgia charter (noncurrent loans, allowance, past-due
- *    buckets, equity, net income, brokered deposits, asset series). Every dollar figure is
- *    the reported figure multiplied by 1,000, because the call report stores thousands.
+ * Reads FDIC call-report figures for a Georgia charter: noncurrent loans, the loss allowance,
+ * the 30–89 and 90+ past-due buckets, equity, net income, brokered deposits and the asset
+ * series. Every dollar figure is the reported figure multiplied by 1,000, because the call
+ * report stores thousands of dollars.
  *
  * As with the insider screens, these are thresholds over published figures, not findings of
  * wrongdoing. Every incident prints its formula, its inputs, its threshold and how to
