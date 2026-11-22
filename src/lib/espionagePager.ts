@@ -80,10 +80,13 @@ export function installEspionagePager(pageSize: number = DEFAULT_PAGE_SIZE): () 
     // A page that exists but holds no cards (a filter left three results, say) still reads
     // sensibly: the bar reports what is actually displayed.
     if (label) {
-      label.textContent =
+      label.textContent = total === 0 ? '0/0' : `${page + 1}/${pages}`;
+    }
+    if (bar) {
+      bar.title =
         total === 0
-          ? 'NO TARGETS'
-          : `${page + 1} / ${pages} · ${start + 1}-${end} of ${total}`;
+          ? 'No targets'
+          : `Targets ${start + 1}-${end} of ${total}, twenty per page`;
     }
     if (prev) {
       const off = page <= 0;
@@ -140,10 +143,10 @@ export function installEspionagePager(pageSize: number = DEFAULT_PAGE_SIZE): () 
     if (bar) return;
 
     bar = panel(
-      'position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:60;' +
-        'display:none;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;' +
-        'background:rgba(14,24,34,0.96);border:1px solid #22313d;' +
-        'box-shadow:0 12px 30px -20px #000;' +
+      'position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);z-index:61;' +
+        'display:none;align-items:center;gap:5px;padding:5px 6px;border-radius:8px;' +
+        'background:rgba(14,24,34,0.97);border:1px solid #22313d;' +
+        'box-shadow:0 12px 30px -20px #000;white-space:nowrap;max-width:calc(100vw - 20px);' +
         'font:11px/1.2 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;color:#dbe6ee',
     );
     bar.setAttribute('role', 'navigation');
@@ -155,7 +158,7 @@ export function installEspionagePager(pageSize: number = DEFAULT_PAGE_SIZE): () 
       el.textContent = text;
       el.setAttribute('aria-label', aria);
       el.style.cssText =
-        'padding:4px 10px;border-radius:5px;border:1px solid #2d4150;' +
+        'padding:4px 9px;border-radius:5px;border:1px solid #2d4150;white-space:nowrap;' +
         'background:rgba(18,30,41,0.92);color:#dbe6ee;font:inherit;letter-spacing:.04em;cursor:pointer';
       return el;
     };
@@ -163,7 +166,8 @@ export function installEspionagePager(pageSize: number = DEFAULT_PAGE_SIZE): () 
     prev = button('\u2039 PREV', 'Previous page of targets');
     next = button('NEXT \u203a', 'Next page of targets');
     label = document.createElement('span');
-    label.style.cssText = 'letter-spacing:.06em;padding:0 4px;white-space:nowrap;color:#a9b8c4';
+    label.style.cssText =
+      'letter-spacing:.06em;padding:0 3px;white-space:nowrap;color:#cfdae4;font-weight:600';
 
     prev.addEventListener('click', () => turn(-1));
     next.addEventListener('click', () => turn(1));
