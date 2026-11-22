@@ -1,0 +1,52 @@
+/* Sourced espionage tab + anomaly beacon strobe */
+
+#espionage-layer.omega-sourced > .glass {
+  display: none !important;
+}
+
+.omega-sourced-host {
+  display: block;
+}
+
+/* Two-minute beacon raised on the county map when a sourced anomaly arrives. */
+@keyframes omegaBeaconRing {
+  0% {
+    transform: scale(0.35);
+    opacity: 0.95;
+  }
+  55% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+@keyframes omegaBeaconCore {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.omega-beacon-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: omegaBeaconRing 1s ease-out infinite;
+}
+
+.omega-beacon-core {
+  animation: omegaBeaconCore 0.9s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .omega-beacon-ring,
+  .omega-beacon-core {
+    animation: none;
+  }
+}
