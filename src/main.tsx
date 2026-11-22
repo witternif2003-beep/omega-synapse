@@ -12,6 +12,7 @@ import './index.css';
 import './espionagePinned.css';
 import './ciaPanels.css';
 import './mobileFixes.css';
+import './backgroundLayers.css';
 
 createRoot(document.getElementById('root')!).render(
   <>

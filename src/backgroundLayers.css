@@ -1,0 +1,27 @@
+/* ============================================================================
+   BACKGROUND LAYERS vs CONTENT
+   ----------------------------------------------------------------------------
+   The page background is a full-viewport three.js starfield: <canvas id="scene">
+   and <div id="vignette">, both `position: fixed`. A positioned layer paints
+   above in-flow block content, so wherever the starfield artwork is opaque (the
+   planet, the nebula wash, the sector rings) it covers whatever section is
+   scrolled underneath it. The DOM was fine the whole time: the county table's
+   159 rows were laid out, 4,648px tall and hit-testable, but not one pixel of
+   them reached the screen in that band.
+
+   Giving app content its own stacking context puts every section above the
+   artwork. The starfield still shows through the translucent panels and in the
+   gaps between them, so the background looks the same; it just no longer paints
+   on top of the text. The vignette is lifted back above the content so its edge
+   darkening is unchanged.
+   ========================================================================== */
+
+#page > *,
+#root section {
+  position: relative;
+  z-index: 1;
+}
+
+#vignette {
+  z-index: 3 !important;
+}
