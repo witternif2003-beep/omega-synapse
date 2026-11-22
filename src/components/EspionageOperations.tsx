@@ -205,7 +205,7 @@ export default function EspionageOperations() {
   };
 
   const openInstitution = (name: string) => {
-    const inst = institutionByName(name) ?? feed?.institutions.find((row) => row.name === name) ?? null;
+    const inst = feed?.institutions.find((row) => row.name === name) ?? null;
     if (inst) setDossier({ kind: 'institution', inst });
     else setNotice(`${name} is not in the FDIC institution list, so its quarterly dossier cannot be loaded`);
   };
