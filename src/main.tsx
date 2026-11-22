@@ -6,6 +6,7 @@ import ResearchPlan from './components/ResearchPlan.tsx';
 import BuildStamp from './components/BuildStamp.tsx';
 import { installScrollStabilizer } from './lib/scrollStabilizer.ts';
 import { installEspionageTabStrobe } from './lib/espionageTabStrobe.ts';
+import { installEspionagePager } from './lib/espionagePager.ts';
 import './index.css';
 import './espionagePinned.css';
 import './ciaPanels.css';
@@ -26,3 +27,6 @@ installScrollStabilizer();
 
 // Mark the espionage view tab as just updated.
 installEspionageTabStrobe();
+
+// Page the 170-target espionage list instead of rendering one 91,000px column.
+installEspionagePager(20);
