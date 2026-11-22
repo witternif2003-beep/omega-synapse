@@ -35,6 +35,39 @@
 }
 
 /* ============================================================================
+   ESPIONAGE TAB - THE STROBE KEEPS GOING
+   ----------------------------------------------------------------------------
+   The tab strobed for 20 seconds after load and then went static, which reads as
+   "the strobe is missing" if you arrive later. After the first burst it now settles
+   into a slow two-tone breathing outline instead of stopping: still obviously alive,
+   but calm enough to sit in a navigation bar permanently.
+   ========================================================================== */
+@keyframes espionage-breath {
+  0%, 100% {
+    border-color: rgba(0, 255, 136, .75);
+    box-shadow: 0 0 0 1px rgba(0, 255, 136, .45), 0 0 12px -1px rgba(0, 255, 136, .45);
+    background-color: rgba(0, 255, 136, .08);
+    color: #d9ffe9;
+  }
+  50% {
+    border-color: rgba(251, 191, 36, .9);
+    box-shadow: 0 0 0 1px rgba(251, 191, 36, .7), 0 0 20px 1px rgba(251, 191, 36, .5);
+    background-color: rgba(251, 191, 36, .16);
+    color: #fff7e6;
+  }
+}
+
+.espionage-tab-marked {
+  animation: espionage-breath 3.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .espionage-tab-marked {
+    animation: none;
+  }
+}
+
+/* ============================================================================
    PAINT BUDGET
    ----------------------------------------------------------------------------
    The espionage target grid is 170 cards and 90,000px of page on a phone. Asking
