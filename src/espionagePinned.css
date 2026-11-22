@@ -19,7 +19,7 @@
 }
 
 #espionage-layer > .glass > .border-cyan-500\/30::before {
-  content: 'TIER \03A9 ADMIN PROTOCOL \00B7 PERMANENT';
+  content: 'TIER Ω ADMIN PROTOCOL · PERMANENT';
   display: block;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10px;
