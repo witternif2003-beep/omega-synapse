@@ -59,8 +59,24 @@ function fixStaleCounters(): Plugin {
   };
 }
 
+/**
+ * BUILD ID
+ *
+ * The commit this build came from plus the moment it was built, shown in a corner tag on
+ * the running page (src/components/BuildStamp.tsx). It is the quickest way to tell a stale
+ * cached copy on a phone from a genuinely fresh deployment.
+ */
+function buildId(): string {
+  const sha = (process.env.VERCEL_GIT_COMMIT_SHA || 'local').slice(0, 7);
+  const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+  return `${sha} · ${stamp}Z`;
+}
+
 export default defineConfig(() => {
   return {
+    define: {
+      __BUILD_ID__: JSON.stringify(buildId()),
+    },
     plugins: [fixStaleCounters(), react(), tailwindcss()],
     resolve: {
       alias: {
