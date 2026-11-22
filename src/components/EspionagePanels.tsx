@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowUpRight, Building2, Landmark, RefreshCw, Search, UserRound, Users } from 'lucide-react';
 import { GA_BANK_FILERS } from '../data/gaBankFilers.ts';
-import { money, type PersonView } from '../lib/financialIndicators.ts';
+import { individualIndicators, money, type PersonView } from '../lib/financialIndicators.ts';
 import { IndicatorGrid, peopleFromLive } from './EspionageFeedRow.tsx';
 import type { RoleFilter } from './EspionageFeedRow.tsx';
 import {
@@ -75,6 +75,10 @@ export function IndividualsPanel({
   const person = useMemo(
     () => people.find((entry) => entry.key === selected) ?? people[0] ?? null,
     [people, selected],
+  );
+  const indicators = useMemo(
+    () => (person ? individualIndicators(person, filings) : []),
+    [person, filings],
   );
 
   const counts = useMemo(() => {
@@ -238,6 +242,11 @@ export function IndividualsPanel({
                   </a>
                 </div>
               </div>
+
+              <IndicatorGrid
+                rows={indicators}
+                caption="each value read from this person's Form 4 fields and the FDIC figures for their bank"
+              />
 
               <div>
                 <div className="text-[9px] uppercase tracking-widest text-zinc-500 mb-1">Filings on record</div>
