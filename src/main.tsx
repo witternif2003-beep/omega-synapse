@@ -7,6 +7,7 @@ import { installScrollStabilizer } from './lib/scrollStabilizer.ts';
 import { installEspionageTabStrobe } from './lib/espionageTabStrobe.ts';
 import './index.css';
 import './espionagePinned.css';
+import './ciaPanels.css';
 
 createRoot(document.getElementById('root')!).render(
   <>
