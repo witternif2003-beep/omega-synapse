@@ -1,8 +1,5 @@
 import { Info, FlaskConical, BookOpen, Target, ShieldCheck } from 'lucide-react';
-import {
-  POST_DOCTORATE_RESEARCH_PLAN,
-  GEORGIA_ESPIONAGE_ANOMALIES,
-} from '../data/georgiaEspionageLayer.ts';
+import { POST_DOCTORATE_RESEARCH_PLAN } from '../data/georgiaEspionageLayer.ts';
 import {
   COUNTY_BANK_SOURCE,
   COUNTY_BANKS_BY_FIPS,
@@ -20,7 +17,6 @@ import { COUNTY_SOURCE, GEORGIA_COUNTY_PROFILES } from '../data/georgiaCountyFor
 
 const scopedCounties = GEORGIA_COUNTY_PROFILES.length;
 const countiesWithBanks = Object.keys(COUNTY_BANKS_BY_FIPS).length;
-const demoIncidents = GEORGIA_ESPIONAGE_ANOMALIES.length;
 const districts = ['N.D. Ga. (Atlanta)', 'M.D. Ga. (Macon)', 'S.D. Ga. (Savannah/Augusta)'];
 
 export default function ResearchPlan() {
@@ -58,12 +54,11 @@ export default function ResearchPlan() {
         </div>
 
         {/* Scope figures, all computed */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
           {[
             { label: 'Counties in scope', value: String(scopedCounties) },
             { label: 'Counties with FDIC branches', value: String(countiesWithBanks) },
             { label: 'Federal districts', value: String(districts.length) },
-            { label: 'Demo incident records', value: String(demoIncidents) },
           ].map((stat) => (
             <div key={stat.label} className="border border-zinc-800 bg-[#070f12] rounded px-3 py-2">
               <div className="text-[9px] uppercase tracking-widest text-zinc-500">
@@ -92,8 +87,8 @@ export default function ResearchPlan() {
               drill-down and in the map detail panel.
             </li>
             <li>
-              {demoIncidents} demo incident records placed at the coordinates stored with each
-              record — labelled as demo throughout, never as observed activity.
+              No generated incident records: the dashboard carries none any more. Incidents are
+              only ever shown as sourced OSINT headlines with their publisher, timestamp and link.
             </li>
             <li>
               Counters now report what is actually held: no fixed offsets and no minimum floors,
@@ -200,9 +195,9 @@ export default function ResearchPlan() {
                 geometry (state FIPS 13), {scopedCounties} polygons.
               </li>
               <li>
-                <span className="text-zinc-500">Incident corpus:</span> this dashboard&apos;s own
-                demo records ({demoIncidents} entries) — labelled as demo, not as observed
-                activity.
+                <span className="text-zinc-500">Incident corpus:</span> the live OSINT stream —
+                real headlines with their publisher, timestamp and URL. No generated record is
+                used anywhere on this dashboard.
               </li>
               <li>
                 <span className="text-zinc-500">Standards referenced:</span> 18 U.S.C. § 1832,
