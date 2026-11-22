@@ -71,6 +71,72 @@ function incidentColor(count: number, max: number): string {
   return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
 }
 
+/**
+ * COUNTY NAMES
+ *
+ * Each label sits at the area-weighted centroid of that county's own boundary path, so a
+ * name lands inside the county it belongs to rather than at the middle of its bounding box
+ * (which falls outside the shape for irregular counties). Small, crowded counties are only
+ * labelled when there is room, and the selected county is always labelled.
+ */
+interface CountyLabel {
+  fips: string;
+  name: string;
+  x: number;
+  y: number;
+  area: number;
+}
+
+function centroidOfRing(points: Array<[number, number]>): { x: number; y: number; area: number } {
+  let twiceArea = 0;
+  let cx = 0;
+  let cy = 0;
+
+  for (let i = 0; i < points.length; i += 1) {
+    const [x1, y1] = points[i];
+    const [x2, y2] = points[(i + 1) % points.length];
+    const cross = x1 * y2 - x2 * y1;
+    twiceArea += cross;
+    cx += (x1 + x2) * cross;
+    cy += (y1 + y2) * cross;
+  }
+
+  const area = twiceArea / 2;
+  if (Math.abs(area) < 1e-6) {
+    const n = points.length || 1;
+    const sum = points.reduce<[number, number]>(
+      (acc, [x, y]) => [acc[0] + x, acc[1] + y],
+      [0, 0],
+    );
+    return { x: sum[0] / n, y: sum[1] / n, area: 0 };
+  }
+
+  return { x: cx / (3 * twiceArea), y: cy / (3 * twiceArea), area: Math.abs(area) };
+}
+
+function labelForPath(fips: string, name: string, d: string): CountyLabel | null {
+  const rings = d
+    .split('M')
+    .filter(Boolean)
+    .map((ring) =>
+      ring
+        .replace(/Z/gi, '')
+        .split('L')
+        .map((pair) => pair.split(',').map(Number) as [number, number])
+        .filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y)),
+    );
+
+  let best: { x: number; y: number; area: number } | null = null;
+  for (const ring of rings) {
+    if (ring.length < 3) continue;
+    const candidate = centroidOfRing(ring);
+    if (!best || candidate.area > best.area) best = candidate;
+  }
+
+  if (!best) return null;
+  return { fips, name, x: best.x, y: best.y, area: best.area };
+}
+
 interface IncidentMark {
   id: string;
   facility: string;
@@ -84,6 +150,7 @@ interface IncidentMark {
 export default function GeorgiaCountyMap() {
   const [mode, setMode] = useState<MapMode>('INCIDENTS');
   const [selectedFips, setSelectedFips] = useState<string | null>(null);
+  const [showLabels, setShowLabels] = useState(true);
 
   const assessments = useMemo(
     () => assessCounties(GEORGIA_COUNTY_PROFILES, SNAPSHOT_ID),
@@ -105,6 +172,15 @@ export default function GeorgiaCountyMap() {
       ),
     [],
   );
+
+  const labelPoints = useMemo(() => {
+    const labels = shapes
+      .map((shape) => labelForPath(shape.fips, shape.name, shape.path))
+      .filter((label): label is CountyLabel => label !== null);
+    const areas = labels.map((label) => label.area).sort((a, b) => a - b);
+    const threshold = areas.length ? areas[Math.floor(areas.length * 0.45)] : 0;
+    return { labels, threshold };
+  }, [shapes]);
 
   const marks: IncidentMark[] = useMemo(
     () =>
@@ -191,6 +267,17 @@ export default function GeorgiaCountyMap() {
           </div>
           <div className="flex items-center gap-1.5">
             <button
+              onClick={() => setShowLabels((current) => !current)}
+              aria-pressed={showLabels}
+              className={`px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase border rounded transition-colors cursor-pointer ${
+                showLabels
+                  ? 'border-emerald-400 bg-emerald-500/20 text-emerald-200'
+                  : 'border-zinc-700 bg-zinc-900/70 text-zinc-400 hover:text-white hover:border-zinc-500'
+              }`}
+            >
+              County names
+            </button>
+            <button
               onClick={() => setMode('INCIDENTS')}
               className={`px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase border rounded transition-colors cursor-pointer ${
                 mode === 'INCIDENTS'
@@ -267,6 +354,33 @@ export default function GeorgiaCountyMap() {
                     </path>
                   );
                 })}
+
+                {showLabels && (
+                  <g pointerEvents="none">
+                    {labelPoints.labels
+                      .filter(
+                        (label) =>
+                          label.area >= labelPoints.threshold || label.fips === selectedFips,
+                      )
+                      .map((label) => (
+                        <text
+                          key={label.fips}
+                          x={label.x}
+                          y={label.y}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          fontSize={label.fips === selectedFips ? 15 : 11}
+                          fontWeight={label.fips === selectedFips ? 700 : 500}
+                          fill={label.fips === selectedFips ? '#ffffff' : '#eafff5'}
+                          stroke="#03080a"
+                          strokeWidth={2.6}
+                          paintOrder="stroke"
+                        >
+                          {label.name}
+                        </text>
+                      ))}
+                  </g>
+                )}
 
                 {marks.map((mark) => (
                   <circle
