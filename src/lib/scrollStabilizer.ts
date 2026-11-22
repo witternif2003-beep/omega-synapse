@@ -6,11 +6,16 @@
  * you are looking at slides up or down under your cursor. The browser's own scroll
  * anchoring does not catch it here.
  *
- * This keeps the thing you are looking at exactly where it is. Each animation frame it
- * remembers the viewport position of the <section> under the top third of the screen and,
- * if a layout change above has moved that section, scrolls by the same amount to put it
- * back. User scrolling wins: as soon as the scroll position changes on its own, the
- * stabilizer re-anchors to whatever you moved to instead of fighting you.
+ * This keeps the thing you are looking at exactly where it is: it remembers the viewport
+ * position of the <section> under the top third of the screen and, when a layout change
+ * above has moved that section, scrolls by the same amount to put it back. User scrolling
+ * wins: as soon as the scroll position changes on its own, the stabilizer re-anchors to
+ * whatever you moved to instead of fighting you.
+ *
+ * It only measures when something in the document actually changed. Reading layout every
+ * frame is expensive on a 160,000px page and was costing frames on phones, where the
+ * browser then leaves whole regions unpainted. A MutationObserver marks the page dirty and
+ * the next frame does the measuring.
  *
  * Deliberately dependency-free and passive - it never blocks input, never touches the
  * React tree, and can be switched off with the returned function.
@@ -42,6 +47,11 @@ export function installScrollStabilizer(): () => void {
   let anchorTop = 0;
   let lastScrollY = window.scrollY;
   let frameId = 0;
+  let dirty = true;
+
+  const markDirty = () => {
+    dirty = true;
+  };
 
   const anchorToCurrentPosition = () => {
     anchorEl = pickAnchorElement();
@@ -59,6 +69,7 @@ export function installScrollStabilizer(): () => void {
       } else {
         anchorToCurrentPosition();
       }
+      dirty = false;
       frameId = requestAnimationFrame(frame);
       return;
     }
@@ -66,12 +77,20 @@ export function installScrollStabilizer(): () => void {
     if (y <= 0) {
       // At the very top the feed can insert freely; nothing above us to preserve.
       anchorEl = null;
+      dirty = false;
+      frameId = requestAnimationFrame(frame);
+      return;
+    }
+
+    if (!dirty) {
+      // Nothing in the document changed, so nothing above us moved either.
       frameId = requestAnimationFrame(frame);
       return;
     }
 
     if (!anchorEl || !anchorEl.isConnected) {
       anchorToCurrentPosition();
+      dirty = false;
       frameId = requestAnimationFrame(frame);
       return;
     }
@@ -83,18 +102,29 @@ export function installScrollStabilizer(): () => void {
       const target = Math.max(0, y + delta);
       window.scrollTo(0, target);
       lastScrollY = window.scrollY;
-      const settledTop = anchorEl.getBoundingClientRect().top;
-      anchorTop = settledTop;
+      anchorTop = anchorEl.getBoundingClientRect().top;
     }
 
+    dirty = false;
     frameId = requestAnimationFrame(frame);
   };
 
   frameId = requestAnimationFrame(frame);
 
+  const observer = new MutationObserver(markDirty);
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    characterData: true,
+  });
+
+  window.addEventListener('resize', markDirty, { passive: true });
+
   return () => {
     if (frameId) cancelAnimationFrame(frameId);
     frameId = 0;
     anchorEl = null;
+    observer.disconnect();
+    window.removeEventListener('resize', markDirty);
   };
 }
