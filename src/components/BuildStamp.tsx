@@ -28,9 +28,15 @@ const style: CSSProperties = {
 };
 
 export default function BuildStamp() {
+  // "sha · timestamp": the commit is what identifies a build; the timestamp is supporting
+  // detail, and on a phone it is dropped so the tag stays short enough to sit beside the
+  // pager control without crowding it.
+  const [sha, builtAt] = __BUILD_ID__.split(' · ');
+
   return (
-    <div className="build-stamp" style={style} title="Build deployed to this page">
-      BUILD {__BUILD_ID__}
+    <div className="build-stamp" style={style} title={`Build ${__BUILD_ID__}`}>
+      BUILD {sha}
+      {builtAt ? <span className="build-stamp-time"> · {builtAt}</span> : null}
     </div>
   );
 }

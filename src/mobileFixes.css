@@ -93,11 +93,24 @@
     border-radius: 6px;
   }
 
-  /* --- 3. Build tag above the browser toolbar ------------------------------- */
+  /* --- 3. Bottom HUD: build tag and pager on one line --------------------- */
+  /* Both sat at different heights over the content. They now share one baseline just above
+     the iOS toolbar: build tag on the left, page control on the right. The timestamp inside
+     the tag is hidden on phones so the two never meet in the middle. */
   .build-stamp {
     bottom: calc(env(safe-area-inset-bottom, 0px) + 70px) !important;
     font-size: 9px !important;
-    opacity: 0.9;
+    padding: 2px 5px !important;
+    background: rgba(9, 16, 22, 0.97) !important;
+    opacity: 0.95;
+  }
+
+  .build-stamp-time {
+    display: none;
+  }
+
+  [aria-label="Espionage target pagination"] {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 70px) !important;
   }
 }
 

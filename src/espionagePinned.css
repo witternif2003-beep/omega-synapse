@@ -42,6 +42,28 @@
    into a slow two-tone breathing outline instead of stopping: still obviously alive,
    but calm enough to sit in a navigation bar permanently.
    ========================================================================== */
+/* The first twenty seconds after load: a fast two-tone strobe that is impossible to miss.
+   This class is applied by src/lib/espionageTabStrobe.ts and previously had no styles at
+   all, so the strobe that was supposed to greet you on load never rendered. */
+@keyframes espionage-strobe-fast {
+  0% {
+    border-color: rgba(0, 255, 136, .95);
+    box-shadow: 0 0 0 2px rgba(0, 255, 136, .55), 0 0 22px 2px rgba(0, 255, 136, .6);
+    background-color: rgba(0, 255, 136, .2);
+    color: #eafff4;
+  }
+  100% {
+    border-color: rgba(251, 191, 36, 1);
+    box-shadow: 0 0 0 2px rgba(251, 191, 36, .7), 0 0 26px 3px rgba(251, 191, 36, .65);
+    background-color: rgba(251, 191, 36, .26);
+    color: #fffaf0;
+  }
+}
+
+.espionage-tab-live {
+  animation: espionage-strobe-fast .6s steps(1, end) infinite alternate;
+}
+
 @keyframes espionage-breath {
   0%, 100% {
     border-color: rgba(0, 255, 136, .75);
@@ -61,9 +83,17 @@
   animation: espionage-breath 3.4s ease-in-out infinite;
 }
 
+/* Reduce Motion slows the breath down instead of stopping it. Colour and glow still change,
+   nothing moves across the screen, and the tab stays visibly alive - which is what it is
+   for. Stopping the animation outright made the tab look broken on phones with Reduce
+   Motion switched on. */
 @media (prefers-reduced-motion: reduce) {
   .espionage-tab-marked {
-    animation: none;
+    animation-duration: 6s;
+  }
+
+  .espionage-tab-live {
+    animation-duration: 1.6s;
   }
 }
 
