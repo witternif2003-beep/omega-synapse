@@ -100,7 +100,7 @@ const CODE_MEANING: Record<string, string> = {
 };
 
 const norm = (value: string): string =>
-  value.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\\s+/g, ' ').trim();
+  value.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(' ').filter(Boolean).join(' ');
 
 /**
  * The FDIC institution a Form 4 issuer's bank reports under. Matched on the bank name

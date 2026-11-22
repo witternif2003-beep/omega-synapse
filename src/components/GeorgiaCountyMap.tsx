@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Info, Layers, MapPin } from 'lucide-react';
 import {
   GEORGIA_COUNTY_PATHS,
@@ -7,6 +7,18 @@ import {
 import { COUNTY_SOURCE, GEORGIA_COUNTY_PROFILES } from '../data/georgiaCountyForensic.ts';
 import { COUNTY_BANKS_BY_FIPS, GEORGIA_BANK_NAMES } from '../data/georgiaCountyBanks.ts';
 import { formatUsd } from '../lib/forensicRisk.ts';
+import {
+  activeAnomalyBeacons,
+  subscribeAnomalyBeacons,
+  type AnomalyBeacon,
+} from '../lib/anomalyBeacon.ts';
+
+const BEACON_COLOR: Record<string, string> = {
+  critical: '#ff1744',
+  high: '#ff9100',
+  medium: '#ffd740',
+  info: '#40c4ff',
+};
 
 /**
  * GEORGIA COUNTY BANK MAP
@@ -94,6 +106,18 @@ function labelForPath(fips: string, name: string, d: string): CountyLabel | null
 export default function GeorgiaCountyMap() {
   const [selectedFips, setSelectedFips] = useState<string | null>(null);
   const [showLabels, setShowLabels] = useState(true);
+  const [beacons, setBeacons] = useState<AnomalyBeacon[]>([]);
+
+  // Beacons are raised by the sourced anomaly feed and expire two minutes after they
+  // start, so the map never carries a mark that no current event supports.
+  useEffect(() => {
+    const unsubscribe = subscribeAnomalyBeacons(setBeacons);
+    const ticker = window.setInterval(() => setBeacons(activeAnomalyBeacons()), 5000);
+    return () => {
+      unsubscribe();
+      window.clearInterval(ticker);
+    };
+  }, []);
 
   const shapes = useMemo(
     () =>
@@ -154,6 +178,15 @@ export default function GeorgiaCountyMap() {
             </span>
             <span className="px-2 py-0.5 border border-zinc-700 bg-zinc-900/70 text-zinc-400 text-[10px] rounded">
               VECTOR · RESOLUTION INDEPENDENT
+            </span>
+            <span
+              className={`px-2 py-0.5 border text-[10px] rounded ${
+                beacons.length
+                  ? 'border-rose-500/70 bg-rose-950/50 text-rose-200 animate-pulse'
+                  : 'border-zinc-700 bg-zinc-900/70 text-zinc-500'
+              }`}
+            >
+              STROBE {beacons.length} ACTIVE
             </span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -218,6 +251,59 @@ export default function GeorgiaCountyMap() {
                   );
                 })}
 
+                {/* Two-minute anomaly beacons: a new event strobes on the county where the
+                    institution's branches are reported, then clears itself. */}
+                <g pointerEvents="none">
+                  {beacons.map((beacon) => {
+                    const color = BEACON_COLOR[beacon.severity] ?? '#ff1744';
+                    const secondsLeft = Math.max(0, Math.round((beacon.expiresAt - Date.now()) / 1000));
+                    return (
+                      <g key={beacon.id}>
+                        <circle
+                          className="omega-beacon-ring"
+                          cx={beacon.x}
+                          cy={beacon.y}
+                          r={24}
+                          fill="none"
+                          stroke={color}
+                          strokeWidth={3}
+                        />
+                        <circle
+                          className="omega-beacon-ring"
+                          cx={beacon.x}
+                          cy={beacon.y}
+                          r={24}
+                          fill="none"
+                          stroke={color}
+                          strokeWidth={1.2}
+                          style={{ animationDelay: '-0.5s' }}
+                        />
+                        <circle
+                          className="omega-beacon-core"
+                          cx={beacon.x}
+                          cy={beacon.y}
+                          r={5.5}
+                          fill={color}
+                          stroke="#03080a"
+                          strokeWidth={1.2}
+                        />
+                        <text
+                          x={beacon.x + 10}
+                          y={beacon.y - 10}
+                          fontSize={9}
+                          fill={color}
+                          stroke="#03080a"
+                          strokeWidth={2.4}
+                          paintOrder="stroke"
+                          fontWeight={700}
+                        >
+                          {beacon.county} · {secondsLeft}s
+                        </text>
+                      </g>
+                    );
+                  })}
+                </g>
+
                 {showLabels && (
                   <g pointerEvents="none">
                     {labelPoints.labels
@@ -250,7 +336,7 @@ export default function GeorgiaCountyMap() {
               <span className="uppercase tracking-widest">Geometry</span>
               <span>U.S. Census county boundaries · state FIPS 13</span>
               <span className="ml-auto">
-                {shapes.length} county polygons
+                {shapes.length} county polygons · beacons last 120s
               </span>
             </div>
           </div>
