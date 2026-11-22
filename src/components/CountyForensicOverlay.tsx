@@ -13,6 +13,11 @@ import {
   type CountyRiskAssessment,
   type RiskBand,
 } from '../lib/forensicRisk.ts';
+import {
+  COUNTY_BANKS_BY_FIPS,
+  GEORGIA_BANK_NAMES,
+  type CountyBankRow,
+} from '../data/georgiaCountyBanks.ts';
 
 /**
  * GEORGIA COUNTY FORENSIC OVERLAY
@@ -47,6 +52,11 @@ export default function CountyForensicOverlay() {
   const [selectedFips, setSelectedFips] = useState<string | null>(null);
 
   const assessments = useMemo(() => assessCounties(GEORGIA_COUNTY_PROFILES, SNAPSHOT_ID), []);
+
+  const selectedBanks = useMemo<CountyBankRow[]>(() => {
+    const rows = selectedFips ? COUNTY_BANKS_BY_FIPS[selectedFips] ?? [] : [];
+    return [...rows].sort((a, b) => b[2] - a[2]);
+  }, [selectedFips]);
 
   const rows: Row[] = useMemo(
     () =>
@@ -373,6 +383,45 @@ export default function CountyForensicOverlay() {
                   </div>
                   <div className="text-zinc-500">HHI</div>
                   <div className="text-right text-zinc-200">{selected.profile.hhi}</div>
+                </div>
+
+                {/* Institutions with branches in this county, real FDIC Summary of
+                    Deposits rows, heaviest deposit base first. */}
+                <div className="border-t border-zinc-800 pt-2 space-y-1.5">
+                  <div className="flex items-center justify-between text-[9px] uppercase tracking-widest text-zinc-500">
+                    <span>Banks in {selected.name} County</span>
+                    <span className="tabular-nums">{selectedBanks.length}</span>
+                  </div>
+                  {selectedBanks.length === 0 ? (
+                    <div className="text-[10px] text-zinc-500">
+                      No FDIC-insured institution reports a branch here.
+                    </div>
+                  ) : (
+                    <>
+                      {selectedBanks.slice(0, 12).map((bank: CountyBankRow) => (
+                        <div
+                          key={`${bank[0]}-${GEORGIA_BANK_NAMES[bank[0]]}`}
+                          className="flex items-baseline justify-between gap-2 text-[10px]"
+                        >
+                          <span className="text-zinc-300 truncate">
+                            {GEORGIA_BANK_NAMES[bank[0]]}
+                          </span>
+                          <span className="tabular-nums text-zinc-400 shrink-0">
+                            {bank[1]} br · {formatUsd(bank[2])}
+                          </span>
+                        </div>
+                      ))}
+                      {selectedBanks.length > 12 && (
+                        <div className="text-[9px] text-zinc-500">
+                          + {selectedBanks.length - 12} more institutions
+                        </div>
+                      )}
+                      <div className="text-[9px] text-zinc-600 pt-1 leading-relaxed">
+                        FDIC Summary of Deposits 2025, branch-level response. Deposits are
+                        the sum of that institution's branches inside the county.
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             ) : (
