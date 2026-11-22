@@ -98,16 +98,18 @@
 }
 
 /* ============================================================================
-   PAINT BUDGET
+   PAINT BUDGET - REMOVED
    ----------------------------------------------------------------------------
-   The espionage target grid is 170 cards and 90,000px of page on a phone. Asking
-   the browser to lay out and paint only the cards near the viewport is what stops
-   the blank, unpainted regions.
+   This used to put `content-visibility: auto` and a 540px intrinsic size on the
+   target cards, because all 170 of them were in the page at once. A phone would
+   then scroll through bands of its own placeholder space: the browser skips
+   painting off-screen boxes, so mid-scroll the screen showed hundreds of pixels
+   of nothing where cards were, with stray pieces of other sections mixed in.
+
+   The list is paginated to twenty cards now (src/lib/espionagePager.ts), so
+   there is nothing left to defer: twenty cards cost about 11,000px of layout and
+   paint in one pass. Removing this is what stops the blank regions.
    ========================================================================== */
-#espionage-layer > .glass > .grid > * {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 540px;
-}
 
 @media (max-width: 640px) {
   /* Pointer-tracking specular and the travelling sheen cost compositing on touch

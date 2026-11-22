@@ -15,6 +15,16 @@
    ========================================================================== */
 
 @media (max-width: 640px) {
+  /* --- 0. Sticky table header, stopped -------------------------------------
+     On a phone iOS will paint a sticky table header outside its scrolling
+     container while the page is moving, which leaves a header row floating over
+     empty space with no rows under it. Inside a nested scroller on a handset the
+     stickiness buys nothing, so it is off there and the header scrolls with its
+     table. */
+  table:has(thead th.w-28) thead {
+    position: static !important;
+  }
+
   /* --- 1. County table: keep the columns that carry the numbers -------------- */
   table:has(thead th.w-28) th:nth-child(2),
   table:has(thead th.w-28) td:nth-child(2),
