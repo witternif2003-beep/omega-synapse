@@ -1,0 +1,56 @@
+/* ============================================================================
+   TIER OMEGA ADMIN PROTOCOL - PINNED TO THE TOP OF THE ESPIONAGE TAB
+   ----------------------------------------------------------------------------
+   The espionage panel is a single long column: header, exclusion stats, three
+   engines, then the 170-target grid. The admin protocol engine (the OMEGA
+   PROTOCOL upgrade and PII redaction panel) sat third, roughly 2,300px down on a
+   phone. Flex order lifts it to the head of the column permanently, without
+   touching the React tree or the data behind it.
+   ========================================================================== */
+#espionage-layer > .glass {
+  display: flex;
+  flex-direction: column;
+}
+
+#espionage-layer > .glass > .border-cyan-500\/30 {
+  order: -1;
+  border-color: rgba(251, 191, 36, .55) !important;
+  box-shadow: 0 0 0 1px rgba(251, 191, 36, .22), 0 0 34px -14px rgba(251, 191, 36, .55);
+}
+
+#espionage-layer > .glass > .border-cyan-500\/30::before {
+  content: 'TIER \03A9 ADMIN PROTOCOL \00B7 PERMANENT';
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  line-height: 1.4;
+  color: #fde68a;
+  background: rgba(251, 191, 36, .12);
+  border: 1px solid rgba(251, 191, 36, .45);
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin-bottom: 10px;
+}
+
+/* ============================================================================
+   PAINT BUDGET
+   ----------------------------------------------------------------------------
+   The espionage target grid is 170 cards and 90,000px of page on a phone. Asking
+   the browser to lay out and paint only the cards near the viewport is what stops
+   the blank, unpainted regions.
+   ========================================================================== */
+#espionage-layer > .glass > .grid > * {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 540px;
+}
+
+@media (max-width: 640px) {
+  /* Pointer-tracking specular and the travelling sheen cost compositing on touch
+     devices for no legibility gain; both are dropped on small screens. */
+  .glass::after,
+  .glass::before {
+    display: none;
+  }
+}

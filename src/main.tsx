@@ -6,6 +6,7 @@ import ResearchPlan from './components/ResearchPlan.tsx';
 import { installScrollStabilizer } from './lib/scrollStabilizer.ts';
 import { installEspionageTabStrobe } from './lib/espionageTabStrobe.ts';
 import './index.css';
+import './espionagePinned.css';
 
 createRoot(document.getElementById('root')!).render(
   <>
