@@ -1,0 +1,229 @@
+/* ============================================================================
+   PALETTE COMPLETION
+   ----------------------------------------------------------------------------
+   The last greens in the interface did not come from any styled component.
+   They came from four places the earlier passes could not reach:
+
+     1. "color: var(--accent)". --accent holds an RGB triple ("111, 216, 255")
+        because inline styles read it as rgba(var(--accent), .5). Used directly
+        as a colour the declaration is invalid and silently dropped, so every
+        element that should have been ice blue fell back to the grey it
+        inherited. --accent-color and --accent-deep are the usable forms.
+     2. Tailwind's own colour variables. The app leans on emerald-300/400/500/950
+        and on arbitrary values such as text-[#4ade80], which resolve to the
+        generated .text-emerald-400 class, not to any rule a class-substring
+        mapping can find. Remapping --color-emerald-* and --color-teal-* at the
+        root turns every one of them - solid, opacity-modified, gradient, hover
+        and focus - ice blue at once.
+     3. Presentation attributes and inline styles in the SVG and the map: the
+        radar rings and county markers were filled with fill="#4ade80" and
+        background-color: rgb(74, 222, 128) in JavaScript, which no stylesheet
+        rule aimed at class names touches.
+     4. The county map, forensic overlay, financial layer and research plan are
+        mounted beside #page rather than inside it, so every earlier fix, scoped
+        to #page, stopped at the page boundary. This sheet is scoped to the
+        document.
+
+   Nothing here changes type, spacing or layout; it is purely the colour sweep.
+   ========================================================================== */
+
+:root {
+  /* Usable forms of the accent. */
+  --accent-color: #6fd8ff;
+  --accent-deep: #2b8fb8;
+
+  /* Tailwind's green ramp, remapped onto the ice ramp at the source. */
+  --color-emerald-50: #f0fbff;
+  --color-emerald-100: #ddf5ff;
+  --color-emerald-200: #c3edff;
+  --color-emerald-300: #a0e4ff;
+  --color-emerald-400: #6fd8ff;
+  --color-emerald-500: #45c2ed;
+  --color-emerald-600: #2ba3cd;
+  --color-emerald-700: #1f7fa6;
+  --color-emerald-800: #175f80;
+  --color-emerald-900: #124059;
+  --color-emerald-950: #0b2637;
+
+  --color-teal-200: #cfeeff;
+  --color-teal-300: #a5e2fb;
+  --color-teal-400: #7fd6f5;
+  --color-teal-500: #4cc4ea;
+  --color-teal-950: #0a2433;
+}
+
+/* ============================================================================
+   1. ACCENT TEXT, FILLS AND FOCUS
+   ----------------------------------------------------------------------------
+   The same declarations ciaSignal.css makes, written in a form the browser can
+   actually parse.
+   ========================================================================== */
+
+/* "color: var(--accent)" is not merely ignored: a var() that substitutes to
+   an unusable value is invalid at computed-value time, so the element inherits
+   and the declaration keeps winning the cascade. That is what turned accent
+   text grey. The corrected rule has to carry the same weight and come later,
+   hence #page here as well as the document-wide form for the components
+   mounted outside it. */
+#page [class*="text-emerald-300"],
+#page [class*="text-emerald-400"],
+#page [class*="text-emerald-500"],
+#page [class*="text-green-"],
+#page [class*="text-[#4ade80]"],
+#page [class*="text-[#34d399]"],
+body [class*="text-emerald-300"],
+body [class*="text-emerald-400"],
+body [class*="text-emerald-500"],
+body [class*="text-green-"],
+body [class*="text-[#4ade80]"],
+body [class*="text-[#34d399]"] {
+  color: rgb(var(--accent)) !important;
+}
+
+#page [class~="bg-emerald-400"],
+#page [class~="bg-emerald-500"],
+body [class~="bg-emerald-400"],
+body [class~="bg-emerald-500"] {
+  background-color: rgb(var(--accent)) !important;
+}
+
+#page input:focus,
+#page select:focus,
+#page textarea:focus,
+body input:focus,
+body select:focus,
+body textarea:focus {
+  border-color: rgb(var(--accent)) !important;
+}
+
+/* ============================================================================
+   2. INSTRUMENT STRIP
+   ----------------------------------------------------------------------------
+   The telemetry tiles carried their severity as a coloured rule. Two of those
+   rules were still green; they now step down the ice ramp, so the only warm
+   rules left are the two that mean something (critical, advisory).
+   ========================================================================== */
+
+#page [class~="bg-emerald-950/20"] {
+  box-shadow: inset 0 2px 0 0 var(--accent-soft) !important;
+}
+
+#page [class~="bg-teal-950/20"] {
+  box-shadow: inset 0 2px 0 0 #a5e2fb !important;
+}
+
+/* ============================================================================
+   3. ARBITRARY-VALUE UTILITIES
+   ----------------------------------------------------------------------------
+   text-[#4ade80], bg-[#4ade80]/15, border-[#4ade80] and their hover and focus
+   twins, which contain the same substring.
+   ========================================================================== */
+
+body [class*="text-[#4ade80]"],
+body [class*="text-[#34d399]"],
+body [class*="hover:text-[#4ade80]"] {
+  color: rgb(var(--accent)) !important;
+}
+
+body [class*="bg-[#4ade80]"] {
+  background-color: rgba(111, 216, 255, 0.14) !important;
+}
+
+body [class*="border-[#4ade80]"],
+body [class*="border-[#166534]"],
+body [class*="border-[#34d399]"] {
+  border-color: rgba(111, 216, 255, 0.42) !important;
+}
+
+body [class*="bg-[#052e16]"],
+body [class*="bg-[#16302a]"],
+body [class*="bg-[#08120f]"] {
+  background-color: rgba(10, 34, 50, 0.82) !important;
+}
+
+/* ============================================================================
+   4. SVG PRESENTATION ATTRIBUTES
+   ----------------------------------------------------------------------------
+   Rings, markers and labels filled by attribute rather than by class. The svg
+   root can carry the attribute as well as its children.
+   ========================================================================== */
+
+body svg[fill="#4ade80"],
+body svg [fill="#4ade80"],
+body svg[fill="#34d399"],
+body svg [fill="#34d399"],
+body svg[stroke="#4ade80"],
+body svg [stroke="#4ade80"],
+body svg[stroke="#34d399"],
+body svg [stroke="#34d399"] {
+  fill: #6fd8ff !important;
+  stroke: #6fd8ff !important;
+}
+
+body svg[fill="#a7f3d0"],
+body svg [fill="#a7f3d0"],
+body svg[stroke="#a7f3d0"],
+body svg [stroke="#a7f3d0"] {
+  fill: #b7ecff !important;
+  stroke: #b7ecff !important;
+}
+
+body svg [fill="#16302a"],
+body svg [fill="#08120f"],
+body svg [stroke="#16302a"] {
+  fill: #0a2232 !important;
+  stroke: #123c53 !important;
+}
+
+body svg [stroke*="0, 255, 136"],
+body svg[stroke*="0, 255, 136"] {
+  stroke: rgba(111, 216, 255, 0.3) !important;
+}
+
+body svg [fill*="0, 255, 136"],
+body svg[fill*="0, 255, 136"] {
+  fill: rgba(111, 216, 255, 0.12) !important;
+}
+
+/* ============================================================================
+   5. INLINE STYLES
+   ----------------------------------------------------------------------------
+   React serialises #4ade80 to rgb(74, 222, 128). Severity chips carry text and
+   border colour that way; growth bars and status dots carry a background. The
+   lime step (#a3e635) belongs to the same ramp and takes the soft ice.
+   ========================================================================== */
+
+body [style*="74, 222, 128"],
+body [style*="52, 211, 153"],
+body [style*="0, 255, 136"],
+body [style*="6, 95, 70"] {
+  color: rgb(var(--accent)) !important;
+  border-color: rgba(111, 216, 255, 0.45) !important;
+}
+
+/* Solid markers and bar fills take the colour without the wash. */
+body span[style*="52, 211, 153"],
+body span[style*="74, 222, 128"],
+body span[style*="0, 230, 118"],
+body div[style*="0, 230, 118"] {
+  background-color: rgb(var(--accent)) !important;
+}
+
+body [style*="163, 230, 53"],
+body [style*="132, 204, 22"] {
+  color: var(--accent-soft) !important;
+  border-color: rgba(183, 236, 255, 0.45) !important;
+}
+
+/* ============================================================================
+   6. VIGNETTE
+   ----------------------------------------------------------------------------
+   A pale green wash sat along the top edge of the scene. It is now the cool blue
+   of the console.
+   ========================================================================== */
+
+#vignette {
+  background:
+    radial-gradient(140% 100% at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.55) 100%),
+    linear-gradient(180deg, rgba(6, 26, 44, 0.3), transparent 18%) !important;
+}

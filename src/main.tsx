@@ -14,6 +14,7 @@ import './index.css';
 import './espionagePinned.css';
 import './ciaPanels.css';
 import './ciaSignal.css';
+import './ciaPalette.css';
 import './mobileFixes.css';
 import './backgroundLayers.css';
 import './espionageOperations.css';
