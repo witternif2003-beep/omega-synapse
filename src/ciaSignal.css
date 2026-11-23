@@ -1,0 +1,441 @@
+/* ============================================================================
+   SIGNAL COLOUR AND CHROME
+   ----------------------------------------------------------------------------
+   The second half of the intelligence display standard: the semantic palette,
+   the lexical mapping that folds the app's old hue set into it, the telemetry
+   tiles, tables, controls and scroll chrome. Imported after ciaPanels.css, which
+   owns the tokens, the type scale, the panel geometry and the neon edge.
+
+   The rule throughout: blue is chrome, and colour is a signal. Crimson only on
+   critical, amber only on advisory, green only on a nominal figure. If a hue is
+   not telling the reader something, it is the ice accent.
+   ========================================================================== */
+
+/* ============================================================================
+   4. INK AND THE SEMANTIC PALETTE
+   ========================================================================== */
+
+#page [class*="text-zinc-100"],
+#page [class*="text-zinc-200"],
+#page [class*="text-zinc-300"],
+#page [class*="text-white"] {
+  color: var(--ink-1) !important;
+}
+
+#page [class*="text-zinc-400"],
+#page [class*="text-slate-200"],
+#page [class*="text-slate-300"] {
+  color: var(--ink-2) !important;
+}
+
+#page [class*="text-zinc-500"],
+#page [class*="text-slate-100"] {
+  color: var(--ink-3) !important;
+}
+
+#page [class*="text-zinc-600"],
+#page [class*="text-zinc-700"] {
+  color: var(--ink-4) !important;
+}
+
+/* Cyan was the section-label colour; keep it for navigation and notices. */
+#page [class*="text-cyan-"],
+#page [class*="text-sky-"],
+#page [class*="text-teal-"] {
+  color: var(--notice) !important;
+}
+
+#page [class*="text-cyan-100"],
+#page [class*="text-cyan-200"],
+#page [class*="text-sky-200"],
+#page [class*="text-teal-200"],
+#page [class*="text-emerald-100"],
+#page [class*="text-emerald-200"] {
+  color: var(--accent-soft) !important;
+}
+
+/* The house green becomes the neon accent: the interface is monochrome blue on
+   graphite, and green is held back for the one place it still means "good
+   number" (positive deltas in the tables). */
+#page [class*="text-emerald-300"],
+#page [class*="text-emerald-400"],
+#page [class*="text-emerald-500"],
+#page [class*="text-green-"],
+#page [class*="text-\[#4ade80\]"] {
+  color: var(--accent) !important;
+}
+
+#page [class*="text-amber-"],
+#page [class*="text-yellow-"],
+#page [class*="text-orange-"] {
+  color: var(--advisory) !important;
+}
+
+#page [class*="text-amber-200"],
+#page [class*="text-amber-300"],
+#page [class*="text-yellow-300"] {
+  color: var(--advisory-soft) !important;
+}
+
+#page [class*="text-rose-"],
+#page [class*="text-red-"] {
+  color: var(--critical) !important;
+}
+
+#page [class*="text-rose-200"],
+#page [class*="text-rose-300"] {
+  color: var(--critical-soft) !important;
+}
+
+/* Purple and indigo were decoration. They fold into the steel family. */
+#page [class*="text-purple-"],
+#page [class*="text-indigo-"],
+#page [class*="text-violet-"] {
+  color: #bfd0df !important;
+}
+
+/* ---- Fills -------------------------------------------------------------- */
+#page [class*="bg-emerald-950"],
+#page [class*="bg-emerald-900"],
+#page [class*="bg-green-9"],
+#page [class*="bg-[#052e16]"],
+#page [class*="bg-[#022c22]"] {
+  background-color: rgba(111, 216, 255, 0.09) !important;
+}
+
+#page [class*="bg-cyan-950"],
+#page [class*="bg-sky-950"],
+#page [class*="bg-teal-950"],
+#page [class*="bg-indigo-950"],
+#page [class*="bg-purple-950"] {
+  background-color: rgba(142, 197, 224, 0.1) !important;
+}
+
+#page [class*="bg-amber-950"],
+#page [class*="bg-yellow-950"],
+#page [class*="bg-orange-950"] {
+  background-color: rgba(232, 180, 90, 0.11) !important;
+}
+
+#page [class*="bg-rose-950"],
+#page [class*="bg-red-950"] {
+  background-color: rgba(240, 106, 125, 0.11) !important;
+}
+
+#page [class*="bg-zinc-900"],
+#page [class*="bg-zinc-950"],
+#page [class*="bg-black/"],
+#page [class*="bg-slate-900"] {
+  background-color: var(--surface-1) !important;
+}
+
+#page [class~="bg-zinc-800"] {
+  background-color: var(--surface-3) !important;
+}
+
+/* Solid markers keep their meaning. */
+#page [class~="bg-emerald-400"],
+#page [class~="bg-emerald-500"] {
+  background-color: var(--accent) !important;
+}
+
+#page [class*="bg-[#4ade80]"] {
+  background-color: rgba(111, 216, 255, 0.16) !important;
+}
+#page [class~="bg-amber-400"] {
+  background-color: var(--advisory) !important;
+}
+#page [class~="bg-rose-500"],
+#page [class~="bg-red-500"] {
+  background-color: var(--critical) !important;
+}
+
+/* ---- Rules -------------------------------------------------------------- */
+#page [class*="border-emerald-"],
+#page [class*="border-green-"],
+#page [class*="border-[#166534]"] {
+  border-color: var(--edge) !important;
+}
+
+#page [class*="border-cyan-"],
+#page [class*="border-sky-"],
+#page [class*="border-teal-"] {
+  border-color: rgba(142, 197, 224, 0.34) !important;
+}
+
+#page [class*="border-amber-"],
+#page [class*="border-yellow-"],
+#page [class*="border-orange-"] {
+  border-color: rgba(232, 180, 90, 0.42) !important;
+}
+
+#page [class*="border-rose-"],
+#page [class*="border-red-"] {
+  border-color: rgba(240, 106, 125, 0.45) !important;
+}
+
+#page [class*="border-purple-"],
+#page [class*="border-indigo-"] {
+  border-color: var(--hairline-strong) !important;
+}
+
+#page [class*="border-zinc-800"],
+#page [class*="border-zinc-900"],
+#page [class*="border-slate-9"] {
+  border-color: var(--hairline) !important;
+}
+
+#page [class*="border-zinc-600"],
+#page [class*="border-zinc-700"],
+#page [class*="border-slate-600"] {
+  border-color: var(--hairline-strong) !important;
+}
+
+#page [class*="border-white/1"] {
+  border-color: var(--hairline) !important;
+}
+
+/* ============================================================================
+   5. TELEMETRY TILES
+   ----------------------------------------------------------------------------
+   Eight tiles in eight hues read as a colour chart, not an instrument panel.
+   They now share one surface and carry their severity as a 2px rule across the
+   top edge, which is enough to distinguish them at a glance.
+   ========================================================================== */
+
+#page [class~="bg-rose-950/20"],
+#page [class~="bg-amber-950/20"],
+#page [class~="bg-cyan-950/20"],
+#page [class~="bg-slate-900/30"],
+#page [class~="bg-emerald-950/20"],
+#page [class~="bg-sky-950/20"],
+#page [class~="bg-indigo-950/20"],
+#page [class~="bg-teal-950/20"] {
+  background-color: var(--surface-2) !important;
+  box-shadow: inset 0 2px 0 0 var(--hairline-strong) !important;
+  border-left: 1px solid rgba(0, 0, 0, 0.35);
+  transition: background-color 0.15s ease;
+}
+
+#page [class~="bg-rose-950/20"] {
+  box-shadow: inset 0 2px 0 0 var(--critical) !important;
+}
+#page [class~="bg-amber-950/20"] {
+  box-shadow: inset 0 2px 0 0 var(--advisory) !important;
+}
+#page [class~="bg-cyan-950/20"] {
+  box-shadow: inset 0 2px 0 0 var(--notice) !important;
+}
+#page [class~="bg-emerald-950/20"] {
+  box-shadow: inset 0 2px 0 0 var(--live) !important;
+}
+#page [class~="bg-sky-950/20"] {
+  box-shadow: inset 0 2px 0 0 var(--notice) !important;
+}
+#page [class~="bg-indigo-950/20"] {
+  box-shadow: inset 0 2px 0 0 #8fa6bd !important;
+}
+
+/* The neutral tiles carry the neon accent rather than a grey rule, so the
+   instrument strip reads as part of the lit console. */
+#page [class~="bg-slate-900/30"] {
+  box-shadow: inset 0 2px 0 0 rgba(160, 238, 255, 0.55) !important;
+}
+#page [class~="bg-teal-950/20"] {
+  box-shadow: inset 0 2px 0 0 #7fd6c8 !important;
+}
+
+#page [class~="bg-rose-950/20"]:hover,
+#page [class~="bg-amber-950/20"]:hover,
+#page [class~="bg-cyan-950/20"]:hover,
+#page [class~="bg-slate-900/30"]:hover,
+#page [class~="bg-emerald-950/20"]:hover,
+#page [class~="bg-sky-950/20"]:hover,
+#page [class~="bg-indigo-950/20"]:hover,
+#page [class~="bg-teal-950/20"]:hover {
+  background-color: var(--surface-3) !important;
+}
+
+/* ============================================================================
+   6. TABLES
+   ========================================================================== */
+
+#page thead,
+#page thead[class~="bg-[#0a1418]"] {
+  background-color: var(--surface-2) !important;
+  color: var(--ink-3) !important;
+  box-shadow: inset 0 -1px 0 var(--hairline-strong);
+}
+
+#page thead th {
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--ink-3) !important;
+}
+
+#page tbody tr {
+  border-color: var(--hairline) !important;
+}
+
+#page tbody tr:hover,
+#page [class~="hover:bg-zinc-900/60"]:hover,
+#page [class~="hover:bg-zinc-900/60"]:focus-visible {
+  background-color: var(--surface-3) !important;
+}
+
+/* Selected county row: a cool selection, not a saturated green block. */
+#page [class~="bg-emerald-950/40"] {
+  background-color: rgba(38, 74, 96, 0.6) !important;
+}
+
+/* ============================================================================
+   7. CONTROLS
+   ========================================================================== */
+
+#page input,
+#page select,
+#page textarea {
+  background-color: var(--surface-0) !important;
+  border-color: var(--hairline-strong) !important;
+  color: var(--ink-1) !important;
+  border-radius: 6px;
+}
+
+#page input::placeholder {
+  color: var(--ink-4) !important;
+}
+
+#page input:focus,
+#page select:focus,
+#page textarea:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px rgba(111, 216, 255, 0.22) !important;
+  outline: none;
+}
+
+#page button {
+  border-radius: 6px;
+}
+
+#page button:focus-visible,
+#page a:focus-visible {
+  outline: 2px solid var(--notice);
+  outline-offset: 2px;
+}
+
+/* Advisory and critical blocks keep a heavier left rule instead of a wash of
+   colour, so the warning still reads as a warning. */
+#page [class~="border-amber-500/50"] {
+  box-shadow: inset 3px 0 0 rgba(232, 180, 90, 0.8) !important;
+}
+
+/* ============================================================================
+   8. CHROME
+   ========================================================================== */
+
+#page .acc-text {
+  color: rgb(var(--accent));
+}
+
+::selection {
+  background: rgba(var(--accent), 0.3);
+  color: #ffffff;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #060b10;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(111, 216, 255, 0.5);
+  border-radius: 6px;
+  border: 2px solid #050a10;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(160, 238, 255, 0.85);
+}
+
+/* The classification banner is a standing label, not a headline: keep it small,
+   wide-tracked and legible. */
+#page > .glass:nth-child(2) {
+  color: var(--accent-soft) !important;
+  letter-spacing: 0.22em !important;
+  font-size: 12.5px !important;
+  text-shadow: 0 0 18px rgba(111, 216, 255, 0.4);
+}
+
+/* ============================================================================
+   9. SCENE TINT AND INLINE ACCENTS
+   ----------------------------------------------------------------------------
+   The 3D starfield and its orbital rings were drawn in phosphor green in
+   three.js, in JavaScript rather than CSS. A hue rotation of 48 degrees turns
+   that green (hue 152) into the ice blue of the interface (hue 200); the
+   starfield is white and the moon is neutral grey, so neither shifts. Doing it
+   here keeps the whole palette in one place and leaves the scene code alone.
+   ========================================================================== */
+#scene {
+  filter: hue-rotate(48deg);
+}
+
+/* One selected-county marker was coloured inline; it takes the accent too. */
+#financial-espionage [style*="#34d399"] {
+  background-color: #6fd8ff !important;
+}
+
+/* ============================================================================
+   10. VIEW-TAB STROBE
+   ----------------------------------------------------------------------------
+   The "just updated" strobe on the espionage tab was written in phosphor green
+   and amber. It keeps its behaviour (fast strobe on load, then a slow breath)
+   but the live half is the ice accent, so the tab belongs to the same console.
+   ========================================================================== */
+@keyframes tab-strobe-ice {
+  0% {
+    border-color: rgba(160, 238, 255, 0.95);
+    box-shadow: 0 0 0 2px rgba(111, 216, 255, 0.55), 0 0 22px 2px rgba(111, 216, 255, 0.6);
+    background-color: rgba(111, 216, 255, 0.2);
+    color: #eafaff;
+  }
+  100% {
+    border-color: rgba(232, 180, 90, 1);
+    box-shadow: 0 0 0 2px rgba(232, 180, 90, 0.6), 0 0 26px 3px rgba(232, 180, 90, 0.5);
+    background-color: rgba(232, 180, 90, 0.22);
+    color: #fff4e2;
+  }
+}
+
+@keyframes tab-breath-ice {
+  0%,
+  100% {
+    border-color: rgba(111, 216, 255, 0.8);
+    box-shadow: 0 0 0 1px rgba(111, 216, 255, 0.45), 0 0 12px -1px rgba(111, 216, 255, 0.45);
+    background-color: rgba(111, 216, 255, 0.08);
+    color: #e4f8ff;
+  }
+  50% {
+    border-color: rgba(232, 180, 90, 0.9);
+    box-shadow: 0 0 0 1px rgba(232, 180, 90, 0.65), 0 0 20px 1px rgba(232, 180, 90, 0.5);
+    background-color: rgba(232, 180, 90, 0.16);
+    color: #fff4e2;
+  }
+}
+
+.espionage-tab-live {
+  animation: tab-strobe-ice 0.6s steps(1, end) infinite alternate !important;
+}
+
+.espionage-tab-marked {
+  animation: tab-breath-ice 3.4s ease-in-out infinite !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .espionage-tab-live {
+    animation-duration: 1.6s !important;
+  }
+  .espionage-tab-marked {
+    animation-duration: 6s !important;
+  }
+}
