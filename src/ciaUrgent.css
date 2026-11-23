@@ -1,0 +1,267 @@
+/* ============================================================================
+   1. URGENT - THE AMBER AND BROWN REPLACEMENT
+   ----------------------------------------------------------------------------
+   Amber was the last warm hue in the console, and at 9-11px on navy it read as
+   brown: the queue panels (bg-[#0a0c07] with amber rules), the HIGH severity
+   chips, the advisory tiles, the financial map markers, the "just updated" tab
+   pulse and a dozen colours handed to inline styles from the severity maps in
+   lib/. It is replaced by one urgent magenta family.
+
+   Magenta is the complement that is left once cyan owns the console and rose
+   owns CRITICAL: it is unmistakably warm, unmistakably a warning, and it cannot
+   be confused with either the ice blue or the brown it replaces. The ramp keeps
+   the old gradation (light = advisory, core = high, deep = the quiet wash) so
+   severity still reads in order.
+
+   Every value is written three ways because the app hands its colours over
+   three ways: Tailwind variables (utilities), inline style strings (React
+   serialises hex to rgb()), and SVG presentation attributes (fill=, stroke=).
+   ========================================================================== */
+
+:root {
+  /* Urgent ramp. */
+  --urgent-rgb: 255, 61, 151;
+  --urgent: #ff3d97;
+  --urgent-text: #ff8cc2; /* 8.4:1 on the panel ground - body-size safe */
+  --urgent-soft: #ffcbe3;
+  --urgent-deep: #a80f59;
+
+  /* ciaSignal.css paints every warm utility with --advisory; moving the token
+     moves all of them at once, including the HIGH instrument tile rule. */
+  --advisory: #ff8cc2;
+  --advisory-soft: #ffcbe3;
+
+  /* Tailwind's warm ramps, remapped at the source so solid, opacity-modified,
+     gradient, hover and focus utilities all resolve to magenta. */
+  --color-amber-50: #fff5fa;
+  --color-amber-100: #ffe6f2;
+  --color-amber-200: #ffcbe3;
+  --color-amber-300: #ffa8d1;
+  --color-amber-400: #ff74b3;
+  --color-amber-500: #ff3d97;
+  --color-amber-600: #e31878;
+  --color-amber-700: #b60f5e;
+  --color-amber-800: #860a46;
+  --color-amber-900: #56062d;
+  --color-amber-950: #31031a;
+
+  --color-yellow-50: #fff5fa;
+  --color-yellow-100: #ffe6f2;
+  --color-yellow-200: #ffcbe3;
+  --color-yellow-300: #ffa8d1;
+  --color-yellow-400: #ff74b3;
+  --color-yellow-500: #ff3d97;
+  --color-yellow-600: #e31878;
+  --color-yellow-700: #b60f5e;
+  --color-yellow-800: #860a46;
+  --color-yellow-900: #56062d;
+  --color-yellow-950: #31031a;
+
+  --color-orange-50: #fff5fa;
+  --color-orange-100: #ffe6f2;
+  --color-orange-200: #ffcbe3;
+  --color-orange-300: #ffa8d1;
+  --color-orange-400: #ff74b3;
+  --color-orange-500: #ff3d97;
+  --color-orange-600: #e31878;
+  --color-orange-700: #b60f5e;
+  --color-orange-800: #860a46;
+  --color-orange-900: #56062d;
+  --color-orange-950: #31031a;
+}
+
+/* ---- 1a. Warm utilities outside #page ------------------------------------
+   The map, forensic overlay, financial layer, research plan and crime queue are
+   mounted beside #page, so ciaSignal.css never reaches them. These rules are
+   document-wide for that reason. ------------------------------------------------- */
+
+[class*="text-amber-"],
+[class*="text-yellow-"],
+[class*="text-orange-"] {
+  color: var(--urgent-text) !important;
+}
+
+[class*="bg-amber-950"],
+[class*="bg-yellow-950"],
+[class*="bg-orange-950"] {
+  background-color: rgba(255, 61, 151, 0.10) !important;
+}
+
+[class*="border-amber-"],
+[class*="border-yellow-"],
+[class*="border-orange-"] {
+  border-color: rgba(255, 61, 151, 0.40) !important;
+}
+
+/* The queue's olive-black wells read as brown next to the ice blue. */
+[class*="bg-[#0a0c07]"] {
+  background-color: rgba(255, 61, 151, 0.05) !important;
+}
+
+/* Solid dots, bars and chips (HIGH severity, QUEUED) take the core tone. */
+[class~="bg-amber-400"],
+[class~="bg-amber-500"],
+[class~="bg-yellow-400"],
+[class~="bg-yellow-500"],
+[class~="bg-orange-400"],
+[class~="bg-orange-500"] {
+  background-color: var(--urgent) !important;
+}
+
+/* ---- 1b. Inline styles from the severity maps ---------------------------
+   React writes #f59e0b as rgb(245, 158, 11) in a style attribute, which no
+   class-based rule can reach. These are the triples used by SEVERITY_COLOR,
+   LEDGER_BAND_COLOR, PRIORITY_COLOR, RISK_BAND_COLORS, KIND_COLOR, the beacon
+   scale and the Chip component. ------------------------------------------------ */
+
+[style*="245, 158, 11"],
+[style*="251, 191, 36"],
+[style*="251, 146, 60"],
+[style*="255, 152, 0"],
+[style*="255, 145, 0"],
+[style*="255, 179, 0"] {
+  color: var(--urgent-text) !important;
+  border-color: rgba(255, 61, 151, 0.50) !important;
+}
+
+[style*="255, 213, 79"],
+[style*="255, 215, 64"],
+[style*="255, 235, 59"] {
+  color: var(--urgent-soft) !important;
+  border-color: rgba(255, 116, 179, 0.50) !important;
+}
+
+/* A dot or bar carrying one of those colours in the background. */
+[style*="245, 158, 11"][style*="background"],
+[style*="251, 191, 36"][style*="background"],
+[style*="251, 146, 60"][style*="background"],
+[style*="255, 152, 0"][style*="background"],
+[style*="255, 145, 0"][style*="background"],
+[style*="255, 179, 0"][style*="background"] {
+  background-color: var(--urgent) !important;
+}
+
+[style*="255, 213, 79"][style*="background"],
+[style*="255, 215, 64"][style*="background"],
+[style*="255, 235, 59"][style*="background"] {
+  background-color: #ff9acb !important;
+}
+
+/* ---- 1c. SVG presentation attributes ------------------------------------ */
+
+[fill="#f59e0b"], [fill="#fbbf24"], [fill="#fb923c"], [fill="#eab308"],
+[fill="#ff9800"], [fill="#ff9100"], [fill="#ffb300"] {
+  fill: var(--urgent) !important;
+}
+
+[fill="#ffd54f"], [fill="#ffd740"], [fill="#ffeb3b"] {
+  fill: #ff9acb !important;
+}
+
+[stroke="#f59e0b"], [stroke="#fbbf24"], [stroke="#fb923c"], [stroke="#eab308"],
+[stroke="#ff9800"], [stroke="#ff9100"], [stroke="#ffb300"] {
+  stroke: var(--urgent) !important;
+}
+
+/* ---- 1d. Arbitrary shadows that baked the amber rgba into the class -----
+   shadow-[0_0_10px_rgba(245,158,11,0.35)] is a literal colour inside the class
+   name, so the only way to recolour it is to match the class string. ------------ */
+
+[class*="rgba(245,158,11"][class*="drop-shadow-"],
+[class*="rgba(234,179,8"][class*="drop-shadow-"] {
+  filter: drop-shadow(0 0 10px rgba(255, 61, 151, 0.50)) !important;
+}
+
+[class*="rgba(245,158,11"]:not([class*="drop-shadow-"]),
+[class*="rgba(234,179,8"]:not([class*="drop-shadow-"]) {
+  box-shadow: 0 0 10px rgba(255, 61, 151, 0.38) !important;
+}
+
+/* ---- 1e. The remaining warm literals in the earlier layers --------------- */
+
+/* ciaSignal.css: advisory wash, advisory rule, advisory tile edge. */
+#page [class*="bg-amber-950"],
+#page [class*="bg-yellow-950"],
+#page [class*="bg-orange-950"] {
+  background-color: rgba(255, 61, 151, 0.10) !important;
+}
+
+#page [class*="border-amber-"],
+#page [class*="border-yellow-"],
+#page [class*="border-orange-"] {
+  border-color: rgba(255, 61, 151, 0.42) !important;
+}
+
+#page [class~="border-amber-500/50"] {
+  box-shadow: inset 3px 0 0 rgba(255, 61, 151, 0.85) !important;
+}
+
+/* espionagePinned.css: the pinned admin protocol panel. */
+#espionage-layer > .glass > [class~="border-cyan-500/30"] {
+  border-color: rgba(255, 61, 151, 0.55) !important;
+  box-shadow: 0 0 0 1px rgba(255, 61, 151, 0.22), 0 0 34px -14px rgba(255, 61, 151, 0.55) !important;
+}
+
+#espionage-layer > .glass > [class~="border-cyan-500/30"]::before {
+  color: var(--urgent-soft);
+  background: rgba(255, 61, 151, 0.12);
+  border-color: rgba(255, 61, 151, 0.45);
+}
+
+/* ---- 1f. The tab pulse: ice blue breathing into urgent magenta ---------- */
+
+@keyframes espionage-strobe-urgent {
+  0%, 100% {
+    border-color: rgba(111, 216, 255, 0.95);
+    box-shadow: 0 0 0 1px rgba(111, 216, 255, 0.8), 0 0 14px 1px rgba(111, 216, 255, 0.5);
+    color: #eefaff;
+  }
+  50% {
+    border-color: rgba(255, 61, 151, 1);
+    box-shadow: 0 0 0 1px rgba(255, 61, 151, 0.9), 0 0 24px 4px rgba(255, 61, 151, 0.6);
+    color: #fff2f8;
+  }
+}
+
+@keyframes espionage-strobe-urgent-fill {
+  0%, 100% { background-color: rgba(111, 216, 255, 0.14); }
+  50% { background-color: rgba(255, 61, 151, 0.22); }
+}
+
+@keyframes espionage-breath-urgent {
+  0%, 100% {
+    border-color: rgba(111, 216, 255, 0.70);
+    box-shadow: 0 0 0 1px rgba(111, 216, 255, 0.40), 0 0 12px -1px rgba(111, 216, 255, 0.40);
+    background-color: rgba(111, 216, 255, 0.08);
+    color: #e6f8ff;
+  }
+  50% {
+    border-color: rgba(255, 61, 151, 0.9);
+    box-shadow: 0 0 0 1px rgba(255, 61, 151, 0.65), 0 0 20px 1px rgba(255, 61, 151, 0.5);
+    background-color: rgba(255, 61, 151, 0.16);
+    color: #ffe9f4;
+  }
+}
+
+.espionage-tab-live {
+  animation: espionage-strobe-urgent 1.7s ease-in-out infinite,
+             espionage-strobe-urgent-fill 1.7s ease-in-out infinite !important;
+}
+
+.espionage-tab-marked {
+  border-color: rgba(255, 61, 151, 0.85) !important;
+  box-shadow: 0 0 0 1px rgba(255, 61, 151, 0.35), 0 0 12px -2px rgba(255, 61, 151, 0.5) !important;
+  color: #ffe9f4 !important;
+  animation: espionage-breath-urgent 3.4s ease-in-out infinite !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .espionage-tab-live {
+    animation: none !important;
+    border-color: rgba(255, 61, 151, 0.9) !important;
+    box-shadow: 0 0 0 1px rgba(255, 61, 151, 0.5) !important;
+  }
+  .espionage-tab-marked {
+    animation: none !important;
+  }
+}
