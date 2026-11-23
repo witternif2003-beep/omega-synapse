@@ -13,6 +13,7 @@ import { GEORGIA_ESPIONAGE_ANOMALIES } from './data/georgiaEspionageLayer.ts';
 import './index.css';
 import './espionagePinned.css';
 import './ciaPanels.css';
+import './ciaSignal.css';
 import './mobileFixes.css';
 import './backgroundLayers.css';
 import './espionageOperations.css';
